@@ -1,0 +1,32 @@
+version: "3.7"
+services:
+  postgres:
+    image: "postgres:13.3"
+    container_name: "dashboard-postgres"
+    restart: always
+    networks:
+    - dashboard-test
+    ports:
+    - "5433:5432"
+    environment:
+      POSTGRES_USER: dashboarduser
+      POSTGRES_PASSWORD: dashboardpwd
+      POSTGRES_DBS: dashboard,dashboard_test
+    command: postgres -c 'config_file=/etc/postgresql/postgresql.conf'
+    volumes:
+    - "./build/docker/postgres.conf:/etc/postgresql/postgresql.conf:z"
+    - "./build/docker/multiple_databases.sh:/docker-entrypoint-initdb.d/multiple_databases.sh"
+  inbucket:
+    image: "jhillyerd/inbucket:release-1.2.0"
+    container_name: "dashboard-inbucket"
+    restart: always
+    networks:
+    - dashboard-test
+    ports:
+    - "12025:10025"
+    - "12080:10080"
+    - "12110:10110"
+
+networks:
+  dashboard-test:
+    driver: bridge
