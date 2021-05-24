@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# Utility binaries
+/bin/golint
+
 # Test binary, built with `go test -c`
 *.test
 
