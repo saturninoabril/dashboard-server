@@ -6,7 +6,7 @@ import (
 	"github.com/saturninoabril/dashboard-server/store"
 )
 
-func cmdStore(command *cobra.Command) (*store.DashboardStore, error) {
+func cmdStore(command *cobra.Command) (*store.SqlStore, error) {
 	database, err := command.Flags().GetString("database")
 	if err != nil {
 		return nil, err

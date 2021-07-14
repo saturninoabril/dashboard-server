@@ -8,7 +8,7 @@ import (
 )
 
 // tableExists determines if the given table name exists in the database.
-func (store *DashboardStore) tableExists(tableName string) (bool, error) {
+func (store *SqlStore) tableExists(tableName string) (bool, error) {
 	var tableExists bool
 
 	switch store.db.DriverName() {

@@ -46,7 +46,7 @@ func (u *userService) Logger(user *model.User) logrus.FieldLogger {
 
 func (u *userService) Create(user *model.User) (*model.User, error) {
 	user.Email = strings.ToLower(user.Email)
-	user, err := u.store.CreateUser(user)
+	user, err := u.store.User().CreateUser(user)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (u *userService) Create(user *model.User) (*model.User, error) {
 }
 
 func (u *userService) Get(id string) (*model.User, error) {
-	user, err := u.store.GetUser(id)
+	user, err := u.store.User().GetUser(id)
 	if err != nil || user == nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (u *userService) Get(id string) (*model.User, error) {
 }
 
 func (u *userService) GetByEmail(email string) (*model.User, error) {
-	return u.store.GetUserByEmail(email)
+	return u.store.User().GetUserByEmail(email)
 }
 
 func (u *userService) AuthenticateUserForLogin(email, password string) (*model.User, error) {
@@ -89,7 +89,7 @@ func (u *userService) AuthenticateUserForLogin(email, password string) (*model.U
 
 	email = strings.ToLower(email)
 
-	user, err := u.store.GetUserByEmail(email)
+	user, err := u.store.User().GetUserByEmail(email)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get user for login")
 	}
@@ -111,14 +111,14 @@ func (u *userService) AuthenticateUserForLogin(email, password string) (*model.U
 }
 
 func (u *userService) Update(user *model.User) (*model.User, error) {
-	err := u.store.UpdateUser(user)
+	err := u.store.User().UpdateUser(user)
 	if err != nil {
 		return nil, err
 	}
 
 	u.Logger(user).Info("update")
 
-	return u.store.GetUser(user.ID)
+	return u.store.User().GetUser(user.ID)
 }
 
 func (u *userService) Login(w http.ResponseWriter, r *http.Request, user *model.User) error {
@@ -150,11 +150,11 @@ func (u *userService) GetSession(tokenOrID string) (*model.Session, error) {
 }
 
 func (u *userService) VerifyEmail(id, email string) error {
-	return u.store.VerifyEmail(id, email)
+	return u.store.User().VerifyEmail(id, email)
 }
 
 func (u *userService) UnverifyEmail(id, email string) error {
-	return u.store.UnverifyEmail(id, email)
+	return u.store.User().UnverifyEmail(id, email)
 }
 
 func (u *userService) HasAdminPermission(id string) (bool, error) {

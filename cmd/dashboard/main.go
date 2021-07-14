@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const defaultDatabase = "postgres://dashboarduser:dashboardpwd@localhost:5433/dashboard_test?sslmode=disable"
+const defaultDatabase = "postgres://dashboarduser:dashboardpwd@localhost:5433/dashboard_dev?sslmode=disable"
 
 var rootCmd = &cobra.Command{
 	Use:   "dashboard",
@@ -22,13 +22,12 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	database, ok := os.LookupEnv("DASHBOARD_DATABASE")
-	fmt.Printf("MAIN database %q", database)
 	if !ok {
 		fmt.Printf("Using default database: '%s'\n", defaultDatabase)
 		database = defaultDatabase
 	}
 
-	rootCmd.PersistentFlags().String("database", fmt.Sprintf("%s", database), "The database backing the dashboard.")
+	rootCmd.PersistentFlags().String("database", database, "The database backing the dashboard.")
 	rootCmd.PersistentFlags().Bool("dev", false, "Set to run in dev mode and configures basic settings if not provided.")
 	rootCmd.AddCommand(serverCmd)
 	rootCmd.AddCommand(schemaCmd)

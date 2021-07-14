@@ -8,7 +8,7 @@ import (
 )
 
 // getSystemValue queries the System table for the given key
-func (store *DashboardStore) getSystemValue(q queryer, key string) (string, error) {
+func (store *SqlStore) getSystemValue(q queryer, key string) (string, error) {
 	var value string
 
 	err := store.getBuilder(q, &value,
@@ -24,7 +24,7 @@ func (store *DashboardStore) getSystemValue(q queryer, key string) (string, erro
 }
 
 // setSystemValue updates the System table for the given key.
-func (store *DashboardStore) setSystemValue(e execer, key, value string) error {
+func (store *SqlStore) setSystemValue(e execer, key, value string) error {
 	result, err := store.execBuilder(e,
 		sq.Update("System").Set("Value", value).Where("Key = ?", key),
 	)

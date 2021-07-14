@@ -13,5 +13,6 @@ func Register(public *mux.Router, context *Context) {
 func initializePublicRoutes(rootRouter *mux.Router, context *Context) {
 	apiRouter := rootRouter.PathPrefix(pathPrefix).Subrouter()
 
+	initHealth(apiRouter, context)
 	initUser(apiRouter, context)
 }

@@ -9,24 +9,48 @@ import (
 	"github.com/saturninoabril/dashboard-server/model"
 )
 
+type SqlUserStore struct {
+	*SqlStore
+}
+
+func newSqlUserStore(sqlStore *SqlStore) UserStore {
+	s := &SqlUserStore{
+		SqlStore: sqlStore,
+	}
+
+	return s
+}
+
+func (s *SqlStore) User() UserStore {
+	return s.stores.user
+}
+
 var userSelect sq.SelectBuilder
 
 func init() {
 	userSelect = sq.
-		Select("ID", "CreateAt", "UpdateAt", "Email", "EmailVerified", "Password",
-			"FirstName", "LastName", "State").
+		Select(
+			"ID",
+			"CreateAt",
+			"UpdateAt",
+			"Email",
+			"EmailVerified",
+			"Password",
+			"FirstName",
+			"LastName",
+			"State").
 		From("Users")
 }
 
 // CreateUser inserts a new user.
-func (store *DashboardStore) CreateUser(user *model.User) (*model.User, error) {
+func (s *SqlUserStore) CreateUser(user *model.User) (*model.User, error) {
 	user.CreatePreSave()
 
 	if err := user.IsValid(); err != nil {
 		return nil, err
 	}
 
-	_, err := store.execBuilder(store.db, sq.
+	_, err := s.execBuilder(s.db, sq.
 		Insert("Users").
 		SetMap(map[string]interface{}{
 			"ID":            user.ID,
@@ -50,9 +74,9 @@ func (store *DashboardStore) CreateUser(user *model.User) (*model.User, error) {
 }
 
 // GetUser fetches the given user by id.
-func (store *DashboardStore) GetUser(id string) (*model.User, error) {
+func (s *SqlUserStore) GetUser(id string) (*model.User, error) {
 	var user model.User
-	err := store.getBuilder(store.db, &user, userSelect.Where("ID = ?", id))
+	err := s.getBuilder(s.db, &user, userSelect.Where("ID = ?", id))
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -63,9 +87,9 @@ func (store *DashboardStore) GetUser(id string) (*model.User, error) {
 }
 
 // GetUserByEmail fetches the given user by email.
-func (store *DashboardStore) GetUserByEmail(email string) (*model.User, error) {
+func (s *SqlUserStore) GetUserByEmail(email string) (*model.User, error) {
 	var user model.User
-	err := store.getBuilder(store.db, &user, userSelect.Where("Email = ?", email))
+	err := s.getBuilder(s.db, &user, userSelect.Where("Email = ?", email))
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -76,9 +100,9 @@ func (store *DashboardStore) GetUserByEmail(email string) (*model.User, error) {
 }
 
 // VerifyEmail updates a user's email and marks it as verified.
-func (store *DashboardStore) VerifyEmail(id, email string) error {
+func (s *SqlUserStore) VerifyEmail(id, email string) error {
 	currentTime := model.GetMillis()
-	_, err := store.execBuilder(store.db,
+	_, err := s.execBuilder(s.db,
 		sq.Update("").Table("Users").Where("ID = ?", id).
 			Set("UpdateAt", currentTime).
 			Set("EmailVerified", true).
@@ -92,9 +116,9 @@ func (store *DashboardStore) VerifyEmail(id, email string) error {
 }
 
 // UnverifyEmail updates a user's email and marks it as unverified.
-func (store *DashboardStore) UnverifyEmail(id, email string) error {
+func (s *SqlUserStore) UnverifyEmail(id, email string) error {
 	currentTime := model.GetMillis()
-	_, err := store.execBuilder(store.db,
+	_, err := s.execBuilder(s.db,
 		sq.Update("").Table("Users").Where("ID = ?", id).
 			Set("UpdateAt", currentTime).
 			Set("EmailVerified", false).
@@ -109,10 +133,10 @@ func (store *DashboardStore) UnverifyEmail(id, email string) error {
 
 // UpdatePassword accepts a plaintext password value, hashes it, and saves it
 // as the new password for a given user.
-func (store *DashboardStore) UpdatePassword(id, password string) error {
+func (s *SqlUserStore) UpdatePassword(id, password string) error {
 	hashedPassword := model.HashPassword(password)
 	currentTime := model.GetMillis()
-	_, err := store.execBuilder(store.db,
+	_, err := s.execBuilder(s.db,
 		sq.Update("").Table("Users").Where("ID = ?", id).
 			Set("UpdateAt", currentTime).
 			Set("Password", hashedPassword),
@@ -125,11 +149,11 @@ func (store *DashboardStore) UpdatePassword(id, password string) error {
 }
 
 // UpdateUser updates the given user.
-func (store *DashboardStore) UpdateUser(user *model.User) error {
+func (s *SqlUserStore) UpdateUser(user *model.User) error {
 	if err := user.IsValid(); err != nil {
 		return err
 	}
-	_, err := store.execBuilder(store.db, sq.
+	_, err := s.execBuilder(s.db, sq.
 		Update("Users").
 		SetMap(map[string]interface{}{
 			"Email":     user.Email,

@@ -17,7 +17,7 @@ LDFLAGS += -X "github.com/saturninoabril/dashboard-server/model.BuildHash=$(BUIL
 ## Checks the code style, tests, builds and bundles.
 all: check-style
 
-## Build the docker image for dashboard
+## Build the docker image for server
 .PHONY: build-image
 build-image:
 	@echo Building Go Controller Container Image
@@ -31,8 +31,10 @@ build-image:
 	. -t $(GO_CONTROLLER_IMAGE) \
 	--no-cache
 
+DASHBOARD_DATABASE_DEV ?= postgres://dashboarduser:dashboardpwd@localhost:5433/dashboard_dev?sslmode=disable
+export DASHBOARD_DATABASE=${DASHBOARD_DATABASE_DEV}
+
 DASHBOARD_DATABASE_TEST ?= postgres://dashboarduser:dashboardpwd@localhost:5433/dashboard_test?sslmode=disable
-export DASHBOARD_DATABASE=${DASHBOARD_DATABASE_TEST}
 
 ## Build the Container image for local development.
 .PHONY: start
@@ -61,7 +63,7 @@ clean:
 
 ## Runs govet and gofmt against all packages.
 .PHONY: check-style
-check-style: govet lint check-style-webapp
+check-style: govet lint
 	@echo Checking for style guide compliance
 
 ## Runs lint against all packages.
@@ -100,30 +102,6 @@ endif
 .PHONY: build
 build: build-linux build-osx
 
-## Runs tests against webapp.
-.PHONY: node_modules
-test-webapp: node_modules ## Checks JS file for ESLint conformity
-	@echo Testing Webapp
-	export REACT_APP_BUILD_CLOUD=true
-	cd webapp; npm run test
-
-## Runs checks against webapp.
-.PHONY: check-style-weabpp
-check-style-webapp: node_modules ## Checks JS file for ESLint conformity
-	@echo Checking for style guide compliance
-	cd webapp; npm run check
-
-fix-style-webapp: node_modules ## Fix JS file ESLint issues
-	@echo Fixing lint issues to follow style guide
-
-	cd webapp; npm run fix
-
-## Install node modules.
-.PHONY: node_modules
-node_modules:
-	@echo Getting dependencies using npm
-	cd webapp; npm install
-
 ### Tests
 
 TESTS=.
@@ -134,6 +112,10 @@ go-junit-report:
 
 .PHONY: test-server
 test-server: go-junit-report
-	@echo Running all tests
-	DASHBOARD_DATABASE=$(DASHBOARD_DATABASE) ./scripts/test-server.sh "$(GO)" "$(GOBIN)" "$(TESTS)" "$(TESTFLAGS)"
+	@echo Running server tests
+	DASHBOARD_DATABASE_TEST=${DASHBOARD_DATABASE_TEST} $(GO) test $(TESTFLAGS) -v -tags 'e2e'  -covermode=count -coverprofile=coverage.out ./...
+	EXIT_STATUS=$?
+	cat output | $(GOBIN)/go-junit-report > report.xml
+	rm output
+	exit $EXIT_STATUS
 

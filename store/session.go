@@ -18,7 +18,7 @@ func init() {
 }
 
 // CreateSession inserts a new session.
-func (store *DashboardStore) CreateSession(session *model.Session) (*model.Session, error) {
+func (store *SqlStore) CreateSession(session *model.Session) (*model.Session, error) {
 	session.PreSave()
 
 	_, err := store.execBuilder(store.db, sq.
@@ -40,7 +40,7 @@ func (store *DashboardStore) CreateSession(session *model.Session) (*model.Sessi
 }
 
 // GetSession fetches the given session by id or token. Deletes and does not return expired sessions.
-func (store *DashboardStore) GetSession(idOrToken string) (*model.Session, error) {
+func (store *SqlStore) GetSession(idOrToken string) (*model.Session, error) {
 	var session model.Session
 	err := store.getBuilder(store.db, &session, sessionSelect.Where(sq.Or{sq.Eq{"ID": idOrToken}, sq.Eq{"Token": idOrToken}}))
 	if err == sql.ErrNoRows {
@@ -65,7 +65,7 @@ func (store *DashboardStore) GetSession(idOrToken string) (*model.Session, error
 }
 
 // DeleteSession deletes a session by ID.
-func (store *DashboardStore) DeleteSession(id string) error {
+func (store *SqlStore) DeleteSession(id string) error {
 	_, err := store.execBuilder(store.db, sq.Delete("Session").Where("ID = ?", id))
 	if err != nil {
 		store.logger.
@@ -80,7 +80,7 @@ func (store *DashboardStore) DeleteSession(id string) error {
 }
 
 // DeleteSessionsForUser deletes all the sessions for a user
-func (store *DashboardStore) DeleteSessionsForUser(userID string) error {
+func (store *SqlStore) DeleteSessionsForUser(userID string) error {
 	_, err := store.execBuilder(store.db, sq.Delete("Session").Where("UserID = ?", userID))
 	if err != nil {
 		store.logger.

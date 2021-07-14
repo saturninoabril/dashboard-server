@@ -11,7 +11,7 @@ func LatestVersion() semver.Version {
 }
 
 // Migrate advances the schema of the configured database to the latest version.
-func (store *DashboardStore) Migrate() error {
+func (store *SqlStore) Migrate() error {
 	var currentVersion semver.Version
 	if systemTableExists, err := store.tableExists("System"); err != nil {
 		return errors.Wrap(err, "failed to check if system table exists")

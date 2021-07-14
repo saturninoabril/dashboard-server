@@ -8,13 +8,13 @@ import (
 const systemDatabaseVersionKey = "DatabaseVersion"
 
 // GetCurrentVersion queries the System table for the current database version.
-func (store *DashboardStore) GetCurrentVersion() (semver.Version, error) {
+func (store *SqlStore) GetCurrentVersion() (semver.Version, error) {
 	return store.getCurrentVersion(store.db)
 }
 
 // getCurrentVersion queries the System table for the current database version against the given
 // queryer.
-func (store *DashboardStore) getCurrentVersion(q queryer) (semver.Version, error) {
+func (store *SqlStore) getCurrentVersion(q queryer) (semver.Version, error) {
 	currentVersionStr, err := store.getSystemValue(q, systemDatabaseVersionKey)
 	if currentVersionStr == "" {
 		return semver.Version{}, nil
@@ -29,6 +29,6 @@ func (store *DashboardStore) getCurrentVersion(q queryer) (semver.Version, error
 }
 
 // setCurrentVersion updates the System table with the given database version.
-func (store *DashboardStore) setCurrentVersion(e execer, version string) error {
+func (store *SqlStore) setCurrentVersion(e execer, version string) error {
 	return store.setSystemValue(e, systemDatabaseVersionKey, version)
 }

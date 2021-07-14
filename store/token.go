@@ -15,7 +15,7 @@ func init() {
 }
 
 // CreateToken inserts a new token.
-func (store *DashboardStore) CreateToken(token *model.Token) (*model.Token, error) {
+func (store *SqlStore) CreateToken(token *model.Token) (*model.Token, error) {
 	err := token.IsValid()
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid token")
@@ -38,7 +38,7 @@ func (store *DashboardStore) CreateToken(token *model.Token) (*model.Token, erro
 }
 
 // GetToken fetches the given token by token value.
-func (store *DashboardStore) GetToken(tokenValue string) (*model.Token, error) {
+func (store *SqlStore) GetToken(tokenValue string) (*model.Token, error) {
 	var token model.Token
 	err := store.getBuilder(store.db, &token, tokenSelect.Where("Token = ?", tokenValue))
 	if err == sql.ErrNoRows {
@@ -51,7 +51,7 @@ func (store *DashboardStore) GetToken(tokenValue string) (*model.Token, error) {
 }
 
 // GetTokensByEmail fetches the tokens for the passed email
-func (store *DashboardStore) GetTokensByEmail(email, tokenType string) ([]*model.Token, error) {
+func (store *SqlStore) GetTokensByEmail(email, tokenType string) ([]*model.Token, error) {
 	var tokens []*model.Token
 	extraField, err := model.CreateTokenTypeResetPasswordExtra(email)
 	if err != nil {
@@ -72,7 +72,7 @@ func (store *DashboardStore) GetTokensByEmail(email, tokenType string) ([]*model
 }
 
 // DeleteToken deletes a token.
-func (store *DashboardStore) DeleteToken(tokenValue string) error {
+func (store *SqlStore) DeleteToken(tokenValue string) error {
 	_, err := store.execBuilder(store.db,
 		sq.Delete("").From("Tokens").Where("Token = ?", tokenValue),
 	)
@@ -85,7 +85,7 @@ func (store *DashboardStore) DeleteToken(tokenValue string) error {
 
 // DeleteTokensByEmail deletes all the tokes, of one type, belonging to the
 // passed email
-func (store *DashboardStore) DeleteTokensByEmail(email, tokenType string) error {
+func (store *SqlStore) DeleteTokensByEmail(email, tokenType string) error {
 	tokens, err := store.GetTokensByEmail(email, tokenType)
 	if err != nil {
 		return errors.Wrapf(err, "error deleting tokens for email %s", email)
@@ -100,7 +100,7 @@ func (store *DashboardStore) DeleteTokensByEmail(email, tokenType string) error 
 }
 
 // CleanupTokenStore removes tokens that are past the defined expiry time.
-func (store *DashboardStore) CleanupTokenStore(expiryTimeMillis int64) {
+func (store *SqlStore) CleanupTokenStore(expiryTimeMillis int64) {
 	store.logger.Debug("Cleaning up token store.")
 
 	deltime := model.GetMillis() - expiryTimeMillis

@@ -64,7 +64,7 @@ var addNewUserCmd = &cobra.Command{
 		if err != nil {
 			return errors.Wrapf(err, "Error creating user for %s", email)
 		}
-		if role != model.UserRoleName {
+		if role == model.AdminRoleName {
 			roleData, err := store.GetRoleByName(role)
 			if err != nil {
 				return errors.Wrapf(err, "Error creating user for %s", email)

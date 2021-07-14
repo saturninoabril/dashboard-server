@@ -21,7 +21,7 @@ func init() {
 }
 
 // GetRoleByName returns the role entity for the provided name.
-func (store *DashboardStore) GetRoleByName(name string) (*model.Role, error) {
+func (store *SqlStore) GetRoleByName(name string) (*model.Role, error) {
 	var role model.Role
 	err := store.getBuilder(store.db, &role, roleSelect.Where("Name = $1", name))
 	if err == sql.ErrNoRows {
@@ -33,7 +33,7 @@ func (store *DashboardStore) GetRoleByName(name string) (*model.Role, error) {
 	return &role, nil
 }
 
-func (store *DashboardStore) UserHasRole(userID, roleID string) (bool, error) {
+func (store *SqlStore) UserHasRole(userID, roleID string) (bool, error) {
 	var userRole model.UserRole
 	err := store.getBuilder(store.db, &userRole, userRoleSelect.Where("UserID = $1 AND RoleID = $2", userID, roleID))
 	if err == sql.ErrNoRows {
@@ -45,7 +45,7 @@ func (store *DashboardStore) UserHasRole(userID, roleID string) (bool, error) {
 	return true, nil
 }
 
-func (store *DashboardStore) UserHasRoleByName(userID, roleName string) (bool, error) {
+func (store *SqlStore) UserHasRoleByName(userID, roleName string) (bool, error) {
 	var userRole model.UserRole
 	roleSelectByName := sq.Select("u.UserID", "u.RoleID").From("UserRoles u").Join("Roles r ON u.RoleID = r.ID")
 	err := store.getBuilder(store.db, &userRole, roleSelectByName.Where("u.UserID = $1 AND r.Name = $2", userID, roleName))
@@ -58,7 +58,7 @@ func (store *DashboardStore) UserHasRoleByName(userID, roleName string) (bool, e
 	return true, nil
 }
 
-func (store *DashboardStore) AddUserRole(userID, roleID string) error {
+func (store *SqlStore) AddUserRole(userID, roleID string) error {
 	_, err := store.execBuilder(store.db, sq.
 		Insert("UserRoles").
 		SetMap(map[string]interface{}{
@@ -73,7 +73,7 @@ func (store *DashboardStore) AddUserRole(userID, roleID string) error {
 	return nil
 }
 
-func (store *DashboardStore) DeleteUserRole(userID, roleID string) error {
+func (store *SqlStore) DeleteUserRole(userID, roleID string) error {
 	query := sq.Delete("UserRoles").Where("UserID = $1 AND RoleID = $2", userID, roleID)
 	if _, err := store.execBuilder(store.db, query); err != nil {
 		return errors.Wrapf(err, "failed to add role %s to user %s", roleID, userID)
