@@ -12,7 +12,12 @@ func cmdStore(command *cobra.Command) (*store.SqlStore, error) {
 		return nil, err
 	}
 
-	newStore, err := store.New(database, logger)
+	tablePrefix, _ := command.Flags().GetString("table-prefix")
+	if err != nil {
+		return nil, err
+	}
+
+	newStore, err := store.New(database, tablePrefix, logger)
 	if err != nil {
 		return nil, err
 	}

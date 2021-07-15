@@ -1,76 +1,95 @@
 package store
 
 import (
-	"github.com/blang/semver"
+	"bytes"
+	"fmt"
+	"io"
+	"os"
+	"text/template"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source"
+	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 	"github.com/pkg/errors"
+	"github.com/saturninoabril/dashboard-server/store/migrations"
 )
 
-// LatestVersion returns the version to which the last migration migrates.
-func LatestVersion() semver.Version {
-	return migrations[len(migrations)-1].toVersion
+type PrefixedMigration struct {
+	*bindata.Bindata
+	prefix   string
+	postgres bool
 }
 
-// Migrate advances the schema of the configured database to the latest version.
-func (store *SqlStore) Migrate() error {
-	var currentVersion semver.Version
-	if systemTableExists, err := store.tableExists("System"); err != nil {
-		return errors.Wrap(err, "failed to check if system table exists")
-	} else if systemTableExists {
-		currentVersion, err = store.getCurrentVersion(store.db)
-		if err != nil {
-			return err
-		}
+func init() {
+	source.Register("prefixed-migrations", &PrefixedMigration{})
+}
+
+func (pm *PrefixedMigration) executeTemplate(r io.ReadCloser, identifier string) (io.ReadCloser, string, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, "", err
 	}
 
-	store.logger.Infof(
-		"Schema version is %s, latest version is %s",
-		currentVersion,
-		LatestVersion(),
-	)
-
-	applied := 0
-	for _, migration := range migrations {
-		if !currentVersion.EQ(migration.fromVersion) {
-			continue
-		}
-
-		err := func() error {
-			store.logger.Infof("Migrating schema from %s to %s", currentVersion, migration.toVersion)
-			tx, err := store.db.Beginx()
-			if err != nil {
-				return errors.Wrapf(err, "failed to begin applying target version %s", migration.toVersion)
-			}
-			defer tx.Rollback()
-
-			err = migration.migrationFunc(tx)
-			if err != nil {
-				return errors.Wrapf(err, "failed to migrate to target version %s", migration.toVersion)
-			}
-
-			currentVersion = migration.toVersion
-			err = store.setCurrentVersion(tx, currentVersion.String())
-			if err != nil {
-				return errors.Wrap(err, "failed to record target version")
-			}
-
-			applied++
-			err = tx.Commit()
-			if err != nil {
-				return errors.Wrapf(err, "failed to commit target version %s", migration.toVersion)
-			}
-
-			return nil
-		}()
-
-		if err != nil {
-			return err
-		}
+	tmpl, err := template.New("sql").Parse(string(data))
+	if err != nil {
+		return nil, "", err
 	}
 
-	if applied == 1 {
-		store.logger.Info("Applied 1 migration")
-	} else {
-		store.logger.Infof("Applied %d migrations", applied)
+	buffer := bytes.NewBufferString("")
+	err = tmpl.Execute(buffer, map[string]interface{}{"prefix": pm.prefix})
+	if err != nil {
+		return nil, "", err
+	}
+
+	return io.NopCloser(bytes.NewReader(buffer.Bytes())), identifier, nil
+}
+
+func (pm *PrefixedMigration) ReadUp(version uint) (io.ReadCloser, string, error) {
+	r, identifier, err := pm.Bindata.ReadUp(version)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return pm.executeTemplate(r, identifier)
+}
+
+func (pm *PrefixedMigration) ReadDown(version uint) (io.ReadCloser, string, error) {
+	r, identifier, err := pm.Bindata.ReadDown(version)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return pm.executeTemplate(r, identifier)
+}
+
+func (s *SqlStore) Migrate() error {
+	migrationsTable := fmt.Sprintf("%sschema_migrations", s.tablePrefix)
+
+	driver, err := postgres.WithInstance(s.db.DB, &postgres.Config{MigrationsTable: migrationsTable})
+	if err != nil {
+		return err
+	}
+
+	bresource := bindata.Resource(migrations.AssetNames(), migrations.Asset)
+
+	d, err := bindata.WithInstance(bresource)
+	if err != nil {
+		return err
+	}
+	prefixedData := &PrefixedMigration{
+		Bindata:  d.(*bindata.Bindata),
+		prefix:   s.tablePrefix,
+		postgres: true,
+	}
+
+	m, err := migrate.NewWithInstance("prefixed-migration", prefixedData, "postgres", driver)
+	if err != nil {
+		return err
+	}
+	err = m.Up()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 
 	return nil

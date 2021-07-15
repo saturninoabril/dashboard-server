@@ -6,9 +6,11 @@ require (
 	github.com/Masterminds/squirrel v1.5.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.1.1
+	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jaytaylor/html2text v0.0.0-20200412013138-3577fbdbcff7
 	github.com/jmoiron/sqlx v1.3.4
+	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/lib/pq v1.10.2
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pborman/uuid v1.2.1

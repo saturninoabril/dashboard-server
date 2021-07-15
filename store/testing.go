@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -9,19 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func makeUnmigratedTestStore(tb testing.TB, logger log.FieldLogger) *SqlStore {
-	dsn := os.Getenv("DASHBOARD_DATABASE_TEST")
-	fmt.Printf("dsn: %v\n", dsn)
-	store, err := New(dsn, logger)
-	fmt.Printf("err: %v\n", err)
-	require.NoError(tb, err)
-
-	return store
-}
-
 func MakeTestStore(tb testing.TB, logger log.FieldLogger) *SqlStore {
-	sqlStore := makeUnmigratedTestStore(tb, logger)
-	err := sqlStore.Migrate()
+	dsn := os.Getenv("DASHBOARD_DATABASE_TEST")
+	tablePrefix := os.Getenv("DASHBOARD_TABLE_PREFIX")
+	sqlStore, err := New(dsn, tablePrefix, logger)
 	require.NoError(tb, err)
 
 	return sqlStore

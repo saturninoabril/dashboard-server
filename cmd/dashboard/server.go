@@ -63,8 +63,9 @@ var serverCmd = &cobra.Command{
 		}
 
 		database, _ := command.Flags().GetString("database")
+		tablePrefix, _ := command.Flags().GetString("table-prefix")
 
-		store, err := store.New(database, logger)
+		store, err := store.New(database, tablePrefix, logger)
 		if err != nil {
 			return err
 		}

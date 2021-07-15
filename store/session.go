@@ -13,16 +13,22 @@ var sessionSelect sq.SelectBuilder
 
 func init() {
 	sessionSelect = sq.
-		Select("ID", "Token", "CreateAt", "ExpiresAt", "UserID", "CSRFToken").
-		From("Session")
+		Select(
+			"ID",
+			"Token",
+			"CreateAt",
+			"ExpiresAt",
+			"UserID",
+			"CSRFToken",
+		)
 }
 
 // CreateSession inserts a new session.
-func (store *SqlStore) CreateSession(session *model.Session) (*model.Session, error) {
+func (s *SqlStore) CreateSession(session *model.Session) (*model.Session, error) {
 	session.PreSave()
 
-	_, err := store.execBuilder(store.db, sq.
-		Insert("Session").
+	_, err := s.execBuilder(s.db, sq.
+		Insert(s.tablePrefix+"Session").
 		SetMap(map[string]interface{}{
 			"ID":        session.ID,
 			"Token":     session.Token,
@@ -40,9 +46,9 @@ func (store *SqlStore) CreateSession(session *model.Session) (*model.Session, er
 }
 
 // GetSession fetches the given session by id or token. Deletes and does not return expired sessions.
-func (store *SqlStore) GetSession(idOrToken string) (*model.Session, error) {
+func (s *SqlStore) GetSession(idOrToken string) (*model.Session, error) {
 	var session model.Session
-	err := store.getBuilder(store.db, &session, sessionSelect.Where(sq.Or{sq.Eq{"ID": idOrToken}, sq.Eq{"Token": idOrToken}}))
+	err := s.getBuilder(s.db, &session, sessionSelect.From(s.tablePrefix+"Session").Where(sq.Or{sq.Eq{"ID": idOrToken}, sq.Eq{"Token": idOrToken}}))
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -50,9 +56,9 @@ func (store *SqlStore) GetSession(idOrToken string) (*model.Session, error) {
 	}
 
 	if session.IsExpired() {
-		_, err = store.execBuilder(store.db, sq.Delete("Session").Where("ID = ?", session.ID))
+		_, err = s.execBuilder(s.db, sq.Delete("Session").Where("ID = ?", session.ID))
 		if err != nil {
-			store.logger.
+			s.logger.
 				WithField("type", "session").
 				WithField("id", session.ID).
 				WithError(err).
@@ -65,10 +71,10 @@ func (store *SqlStore) GetSession(idOrToken string) (*model.Session, error) {
 }
 
 // DeleteSession deletes a session by ID.
-func (store *SqlStore) DeleteSession(id string) error {
-	_, err := store.execBuilder(store.db, sq.Delete("Session").Where("ID = ?", id))
+func (s *SqlStore) DeleteSession(id string) error {
+	_, err := s.execBuilder(s.db, sq.Delete(s.tablePrefix+"Session").Where("ID = ?", id))
 	if err != nil {
-		store.logger.
+		s.logger.
 			WithField("type", "session").
 			WithField("id", id).
 			WithError(err).
@@ -80,10 +86,10 @@ func (store *SqlStore) DeleteSession(id string) error {
 }
 
 // DeleteSessionsForUser deletes all the sessions for a user
-func (store *SqlStore) DeleteSessionsForUser(userID string) error {
-	_, err := store.execBuilder(store.db, sq.Delete("Session").Where("UserID = ?", userID))
+func (s *SqlStore) DeleteSessionsForUser(userID string) error {
+	_, err := s.execBuilder(s.db, sq.Delete(s.tablePrefix+"Session").Where("UserID = ?", userID))
 	if err != nil {
-		store.logger.
+		s.logger.
 			WithField("type", "session").
 			WithField("userID", userID).
 			WithError(err).

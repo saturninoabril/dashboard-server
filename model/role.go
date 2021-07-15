@@ -18,3 +18,15 @@ type UserRole struct {
 	CreateAt int64  `json:"create_at"`
 	UpdateAt int64  `json:"update_at"`
 }
+
+// CreatePreSave will set the correct values for a new role that is about to be
+// saved.
+func (r *Role) CreatePreSave() {
+	if r.ID == "" {
+		r.ID = NewID()
+	}
+
+	now := GetMillis()
+	r.CreateAt = now
+	r.UpdateAt = now
+}

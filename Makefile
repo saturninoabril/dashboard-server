@@ -9,9 +9,17 @@ GOFLAGS ?= $(GOFLAGS:)
 GO_CONTROLLER_IMAGE ?= saturninoabril/dashboard-server:test
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
 
-MACHINE = $(shell uname -m)
+# Build Flags
+BUILD_NUMBER ?= $(BUILD_NUMBER:)
 BUILD_TIME := $(shell date -u +%Y%m%d.%H%M%S)
 BUILD_HASH = $(shell git rev-parse HEAD)
+# If we don't set the build number it defaults to dev
+ifeq ($(BUILD_NUMBER),)
+	BUILD_NUMBER := dev
+endif
+
+LDFLAGS += -X "github.com/saturninoabril/dashboard-server/model.BuildNumber=$(BUILD_NUMBER)"
+LDFLAGS += -X "github.com/saturninoabril/dashboard-server/model.BuildTime=$(BUILD_TIME)"
 LDFLAGS += -X "github.com/saturninoabril/dashboard-server/model.BuildHash=$(BUILD_HASH)"
 
 ## Checks the code style, tests, builds and bundles.
@@ -43,11 +51,6 @@ start:
 	docker compose up -d
 	sleep 10
 	dashboard server --debug --dev
-
-.PHONY: migrate
-migrate:
-	@echo Creating/migrating schema for local development
-	dashboard schema migrate --dev
 
 ## Shutdown the development environment.
 .PHONY: stop
@@ -106,16 +109,20 @@ build: build-linux build-osx
 
 TESTS=.
 
-.PHONE: go-junit-report
+.PHONY: go-junit-report
 go-junit-report:
 	$(GO) get github.com/jstemmer/go-junit-report
 
 .PHONY: test-server
 test-server: go-junit-report
 	@echo Running server tests
-	DASHBOARD_DATABASE_TEST=${DASHBOARD_DATABASE_TEST} $(GO) test $(TESTFLAGS) -v -tags 'e2e'  -covermode=count -coverprofile=coverage.out ./...
+	DASHBOARD_DATABASE_TEST=${DASHBOARD_DATABASE_TEST} DASHBOARD_TABLE_PREFIX=dashboard_ $(GO) test $(TESTFLAGS) -v -tags 'e2e'  -covermode=count -coverprofile=coverage.out ./...
 	EXIT_STATUS=$?
 	cat output | $(GOBIN)/go-junit-report > report.xml
 	rm output
 	exit $EXIT_STATUS
 
+generate:
+	go get -modfile=go.tools.mod github.com/jteeuwen/go-bindata
+	# go install -v github.com/jteeuwen/go-bindata/...
+	go generate ./...

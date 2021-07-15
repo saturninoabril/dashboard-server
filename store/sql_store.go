@@ -18,13 +18,14 @@ type SqlStoreStores struct {
 }
 
 type SqlStore struct {
-	db     *sqlx.DB
-	logger logrus.FieldLogger
-	stores SqlStoreStores
+	db          *sqlx.DB
+	tablePrefix string
+	logger      logrus.FieldLogger
+	stores      SqlStoreStores
 }
 
 // New constructs a new instance of SqlStore.
-func New(dsn string, logger logrus.FieldLogger) (*SqlStore, error) {
+func New(dsn string, tablePrefix string, logger logrus.FieldLogger) (*SqlStore, error) {
 	url, err := url.Parse(dsn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse dsn as url")
@@ -65,10 +66,21 @@ func New(dsn string, logger logrus.FieldLogger) (*SqlStore, error) {
 	var stores SqlStoreStores
 	store := &SqlStore{
 		db,
+		tablePrefix,
 		logger,
 		stores,
 	}
 	store.stores.user = newSqlUserStore(store)
+
+	err = store.Migrate()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create tables")
+	}
+
+	err = store.Initialize()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize store")
+	}
 
 	return store, nil
 }
@@ -84,8 +96,8 @@ type queryer interface {
 //
 // Use this to simplify querying for a single row or column. Dest may be a pointer to a simple
 // type, or a struct with fields to be populated from the returned columns.
-func (store *SqlStore) get(q sqlx.Queryer, dest interface{}, query string, args ...interface{}) error {
-	query = store.db.Rebind(query)
+func (s *SqlStore) get(q sqlx.Queryer, dest interface{}, query string, args ...interface{}) error {
+	query = s.db.Rebind(query)
 
 	return sqlx.Get(q, dest, query, args...)
 }
@@ -97,17 +109,17 @@ type builder interface {
 	ToSql() (string, []interface{}, error)
 }
 
-// get queries for a single row, building the sql, and writing the result into dest.
+// getBuilder queries for a single row, building the sql, and writing the result into dest.
 //
 // Use this to simplify querying for a single row or column. Dest may be a pointer to a simple
 // type, or a struct with fields to be populated from the returned columns.
-func (store *SqlStore) getBuilder(q sqlx.Queryer, dest interface{}, b builder) error {
+func (s *SqlStore) getBuilder(q sqlx.Queryer, dest interface{}, b builder) error {
 	sql, args, err := b.ToSql()
 	if err != nil {
 		return errors.Wrap(err, "failed to build sql")
 	}
 
-	sql = store.db.Rebind(sql)
+	sql = s.db.Rebind(sql)
 
 	err = sqlx.Get(q, dest, sql, args...)
 	if err != nil {
@@ -121,13 +133,13 @@ func (store *SqlStore) getBuilder(q sqlx.Queryer, dest interface{}, b builder) e
 //
 // Use this to simplify querying for multiple rows (and possibly columns). Dest may be a slice of
 // a simple, or a slice of a struct with fields to be populated from the returned columns.
-func (store *SqlStore) selectBuilder(q sqlx.Queryer, dest interface{}, b builder) error {
+func (s *SqlStore) selectBuilder(q sqlx.Queryer, dest interface{}, b builder) error {
 	sql, args, err := b.ToSql()
 	if err != nil {
 		return errors.Wrap(err, "failed to build sql")
 	}
 
-	sql = store.db.Rebind(sql)
+	sql = s.db.Rebind(sql)
 
 	err = sqlx.Select(q, dest, sql, args...)
 	if err != nil {
@@ -146,17 +158,17 @@ type execer interface {
 }
 
 // exec executes the given query using positional arguments, automatically rebinding for the db.
-func (store *SqlStore) exec(e execer, sql string, args ...interface{}) (sql.Result, error) {
-	sql = store.db.Rebind(sql)
+func (s *SqlStore) exec(e execer, sql string, args ...interface{}) (sql.Result, error) {
+	sql = s.db.Rebind(sql)
 	return e.Exec(sql, args...)
 }
 
 // exec executes the given query, building the necessary sql.
-func (store *SqlStore) execBuilder(e execer, b builder) (sql.Result, error) {
+func (s *SqlStore) execBuilder(e execer, b builder) (sql.Result, error) {
 	sql, args, err := b.ToSql()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build sql")
 	}
 
-	return store.exec(e, sql, args...)
+	return s.exec(e, sql, args...)
 }

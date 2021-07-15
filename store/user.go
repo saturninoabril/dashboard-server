@@ -38,8 +38,8 @@ func init() {
 			"Password",
 			"FirstName",
 			"LastName",
-			"State").
-		From("Users")
+			"State",
+		)
 }
 
 // CreateUser inserts a new user.
@@ -51,7 +51,7 @@ func (s *SqlUserStore) CreateUser(user *model.User) (*model.User, error) {
 	}
 
 	_, err := s.execBuilder(s.db, sq.
-		Insert("Users").
+		Insert(s.tablePrefix+"Users").
 		SetMap(map[string]interface{}{
 			"ID":            user.ID,
 			"CreateAt":      user.CreateAt,
@@ -76,7 +76,7 @@ func (s *SqlUserStore) CreateUser(user *model.User) (*model.User, error) {
 // GetUser fetches the given user by id.
 func (s *SqlUserStore) GetUser(id string) (*model.User, error) {
 	var user model.User
-	err := s.getBuilder(s.db, &user, userSelect.Where("ID = ?", id))
+	err := s.getBuilder(s.db, &user, userSelect.From(s.tablePrefix+"Users").Where("ID = ?", id))
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -89,7 +89,7 @@ func (s *SqlUserStore) GetUser(id string) (*model.User, error) {
 // GetUserByEmail fetches the given user by email.
 func (s *SqlUserStore) GetUserByEmail(email string) (*model.User, error) {
 	var user model.User
-	err := s.getBuilder(s.db, &user, userSelect.Where("Email = ?", email))
+	err := s.getBuilder(s.db, &user, userSelect.From(s.tablePrefix+"Users").Where("Email = ?", email))
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -103,7 +103,7 @@ func (s *SqlUserStore) GetUserByEmail(email string) (*model.User, error) {
 func (s *SqlUserStore) VerifyEmail(id, email string) error {
 	currentTime := model.GetMillis()
 	_, err := s.execBuilder(s.db,
-		sq.Update("").Table("Users").Where("ID = ?", id).
+		sq.Update("").Table(s.tablePrefix+"Users").Where("ID = ?", id).
 			Set("UpdateAt", currentTime).
 			Set("EmailVerified", true).
 			Set("Email", email),
@@ -119,7 +119,7 @@ func (s *SqlUserStore) VerifyEmail(id, email string) error {
 func (s *SqlUserStore) UnverifyEmail(id, email string) error {
 	currentTime := model.GetMillis()
 	_, err := s.execBuilder(s.db,
-		sq.Update("").Table("Users").Where("ID = ?", id).
+		sq.Update("").Table(s.tablePrefix+"Users").Where("ID = ?", id).
 			Set("UpdateAt", currentTime).
 			Set("EmailVerified", false).
 			Set("Email", email),
@@ -137,7 +137,7 @@ func (s *SqlUserStore) UpdatePassword(id, password string) error {
 	hashedPassword := model.HashPassword(password)
 	currentTime := model.GetMillis()
 	_, err := s.execBuilder(s.db,
-		sq.Update("").Table("Users").Where("ID = ?", id).
+		sq.Update("").Table(s.tablePrefix+"Users").Where("ID = ?", id).
 			Set("UpdateAt", currentTime).
 			Set("Password", hashedPassword),
 	)
@@ -154,7 +154,7 @@ func (s *SqlUserStore) UpdateUser(user *model.User) error {
 		return err
 	}
 	_, err := s.execBuilder(s.db, sq.
-		Update("Users").
+		Update(s.tablePrefix+"Users").
 		SetMap(map[string]interface{}{
 			"Email":     user.Email,
 			"FirstName": user.FirstName,

@@ -15,15 +15,48 @@ var (
 
 func init() {
 	roleSelect = sq.
-		Select("ID", "Name", "CreateAt", "UpdateAt").From("Roles")
+		Select(
+			"ID",
+			"Name",
+			"CreateAt",
+			"UpdateAt",
+		)
 	userRoleSelect = sq.
-		Select("UserID", "RoleID", "CreateAt", "UpdateAt").From("UserRoles")
+		Select(
+			"UserID",
+			"RoleID",
+			"CreateAt",
+			"UpdateAt",
+		)
+}
+
+// CreateRole inserts a new role.
+func (s *SqlStore) CreateRole(role *model.Role) (*model.Role, error) {
+	role.CreatePreSave()
+
+	_, err := s.execBuilder(s.db, sq.
+		Insert(s.tablePrefix+"Roles").
+		SetMap(map[string]interface{}{
+			"ID":       role.ID,
+			"Name":     role.Name,
+			"CreateAt": role.CreateAt,
+			"UpdateAt": role.UpdateAt,
+		}),
+	)
+	if err != nil {
+		if isUniqueConstraintError(err, []string{"Name", "name"}) {
+			return nil, errors.New("name exists")
+		}
+		return nil, errors.Wrap(err, "failed to create role")
+	}
+
+	return role, nil
 }
 
 // GetRoleByName returns the role entity for the provided name.
-func (store *SqlStore) GetRoleByName(name string) (*model.Role, error) {
+func (s *SqlStore) GetRoleByName(name string) (*model.Role, error) {
 	var role model.Role
-	err := store.getBuilder(store.db, &role, roleSelect.Where("Name = $1", name))
+	err := s.getBuilder(s.db, &role, roleSelect.From(s.tablePrefix+"Roles").Where("Name = $1", name))
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -33,9 +66,9 @@ func (store *SqlStore) GetRoleByName(name string) (*model.Role, error) {
 	return &role, nil
 }
 
-func (store *SqlStore) UserHasRole(userID, roleID string) (bool, error) {
+func (s *SqlStore) UserHasRole(userID, roleID string) (bool, error) {
 	var userRole model.UserRole
-	err := store.getBuilder(store.db, &userRole, userRoleSelect.Where("UserID = $1 AND RoleID = $2", userID, roleID))
+	err := s.getBuilder(s.db, &userRole, userRoleSelect.From(s.tablePrefix+"UserRoles").Where("UserID = $1 AND RoleID = $2", userID, roleID))
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -45,10 +78,10 @@ func (store *SqlStore) UserHasRole(userID, roleID string) (bool, error) {
 	return true, nil
 }
 
-func (store *SqlStore) UserHasRoleByName(userID, roleName string) (bool, error) {
+func (s *SqlStore) UserHasRoleByName(userID, roleName string) (bool, error) {
 	var userRole model.UserRole
-	roleSelectByName := sq.Select("u.UserID", "u.RoleID").From("UserRoles u").Join("Roles r ON u.RoleID = r.ID")
-	err := store.getBuilder(store.db, &userRole, roleSelectByName.Where("u.UserID = $1 AND r.Name = $2", userID, roleName))
+	roleSelectByName := sq.Select("u.UserID", "u.RoleID").From(s.tablePrefix + "UserRoles u").Join(s.tablePrefix + "Roles r ON u.RoleID = r.ID")
+	err := s.getBuilder(s.db, &userRole, roleSelectByName.Where("u.UserID = $1 AND r.Name = $2", userID, roleName))
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -58,9 +91,9 @@ func (store *SqlStore) UserHasRoleByName(userID, roleName string) (bool, error) 
 	return true, nil
 }
 
-func (store *SqlStore) AddUserRole(userID, roleID string) error {
-	_, err := store.execBuilder(store.db, sq.
-		Insert("UserRoles").
+func (s *SqlStore) AddUserRole(userID, roleID string) error {
+	_, err := s.execBuilder(s.db, sq.
+		Insert(s.tablePrefix+"UserRoles").
 		SetMap(map[string]interface{}{
 			"UserID": userID,
 			"RoleID": roleID,
@@ -73,9 +106,9 @@ func (store *SqlStore) AddUserRole(userID, roleID string) error {
 	return nil
 }
 
-func (store *SqlStore) DeleteUserRole(userID, roleID string) error {
-	query := sq.Delete("UserRoles").Where("UserID = $1 AND RoleID = $2", userID, roleID)
-	if _, err := store.execBuilder(store.db, query); err != nil {
+func (s *SqlStore) DeleteUserRole(userID, roleID string) error {
+	query := sq.Delete(s.tablePrefix+"UserRoles").Where("UserID = $1 AND RoleID = $2", userID, roleID)
+	if _, err := s.execBuilder(s.db, query); err != nil {
 		return errors.Wrapf(err, "failed to add role %s to user %s", roleID, userID)
 	}
 
