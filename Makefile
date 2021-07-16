@@ -1,3 +1,5 @@
+export SERVER_PATH ?= ${PWD}
+
 # Docker Build Versions
 DOCKER_BUILDER_SERVER_IMAGE = golang:1.16
 DOCKER_BUILDER_WEBAPP_IMAGE = node:16-alpine

@@ -222,21 +222,6 @@ func (c *Client) VerifyEmailComplete(request *VerifyEmailRequest) error {
 	return readAPIError(resp)
 }
 
-// VerifyUserInternal verifies the user without passing the token
-func (c *Client) VerifyUserInternal(userID string) error {
-	resp, err := c.doPost(c.BuildURL("/api/v1/internal/users/%s/verify", userID), nil)
-	if err != nil {
-		return err
-	}
-	defer closeBody(resp)
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		return nil
-	}
-	return readAPIError(resp)
-}
-
 // Login will log a user in.
 func (c *Client) Login(request *LoginRequest) (*User, error) {
 	resp, err := c.doPost(c.BuildURL("/api/v1/users/login"), request)

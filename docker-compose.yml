@@ -26,6 +26,10 @@ services:
     - "12025:10025"
     - "12080:10080"
     - "12110:10110"
+    environment:
+      INBUCKET_SMTP_ADDR: "0.0.0.0:10025"
+      INBUCKET_WEB_ADDR: "0.0.0.0:10080"
+      INBUCKET_POP3_ADDR: "0.0.0.0:10110"
 
 networks:
   dashboard-test:

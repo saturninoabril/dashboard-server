@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -13,6 +15,8 @@ import (
 
 // initUser registers user endpoints on the given router.
 func initUser(apiRouter *mux.Router, context *Context) {
+	rand.Seed(time.Now().UnixNano())
+
 	usersRouter := apiRouter.PathPrefix("/users").Subrouter()
 	usersRouter.Handle("/signup", newAPIHandler(context, handleSignUp)).Methods("POST")
 	usersRouter.Handle("/login", newAPIHandler(context, handleLogin)).Methods("POST")

@@ -6,11 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/saturninoabril/dashboard-server/store"
+	"github.com/saturninoabril/dashboard-server/utils"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	templatesDir = "internal/templates"
 )
 
 // App contains all the business logic as methods.
@@ -64,6 +61,10 @@ func (a *App) User() UserService {
 
 // ReloadHTMLTemplates refreshes the in-memory HTML templates.
 func (a *App) ReloadHTMLTemplates() error {
+	templatesDir, ok := utils.GetTemplateDirectory()
+	if !ok {
+		return errors.New("unable to find templates directory")
+	}
 	t, err := template.ParseGlob(filepath.Join(templatesDir, "*.html"))
 	if err != nil {
 		return errors.Wrap(err, "unable to reload templates")

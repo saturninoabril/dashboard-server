@@ -21,3 +21,21 @@ type Config struct {
 func NewConfig() Config {
 	return Config{}
 }
+
+// SetDevConfig create config for local dev mode.
+func SetDevConfig(config *Config) {
+	config.Dev = true
+
+	if len(config.SiteURL) == 0 {
+		config.SiteURL = "http://localhost:3000"
+	}
+	if len(config.Email.SMTPServer) == 0 {
+		config.Email.SMTPServer = "localhost"
+	}
+	if len(config.Email.SMTPPort) == 0 {
+		config.Email.SMTPPort = "12025"
+	}
+	if config.Email.SMTPServerTimeout == 0 {
+		config.Email.SMTPServerTimeout = 10
+	}
+}

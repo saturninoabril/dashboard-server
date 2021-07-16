@@ -76,7 +76,7 @@ func (a *App) SendVerifyEmailEmail(email, siteURL string, token *model.Token) er
 
 	renderedBody, err := bodyPage.Render()
 	if err != nil {
-		return errors.Wrap(err, "unable to render reset password email")
+		return errors.Wrap(err, "unable to render verify email body")
 	}
 
 	err = a.SendMail(email, subject, renderedBody, false)

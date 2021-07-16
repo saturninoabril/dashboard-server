@@ -58,7 +58,7 @@ var serverCmd = &cobra.Command{
 
 		dev, _ := command.Flags().GetBool("dev")
 		if dev {
-			setDevConfig(&config)
+			app.SetDevConfig(&config)
 			logger.Debug("Using dev configuration")
 		}
 
@@ -125,21 +125,4 @@ var serverCmd = &cobra.Command{
 
 		return nil
 	},
-}
-
-func setDevConfig(config *app.Config) {
-	config.Dev = true
-
-	if len(config.SiteURL) == 0 {
-		config.SiteURL = "http://localhost:3000"
-	}
-	if len(config.Email.SMTPServer) == 0 {
-		config.Email.SMTPServer = "localhost"
-	}
-	if len(config.Email.SMTPPort) == 0 {
-		config.Email.SMTPPort = "12025"
-	}
-	if config.Email.SMTPServerTimeout == 0 {
-		config.Email.SMTPServerTimeout = 10
-	}
 }

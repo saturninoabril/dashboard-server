@@ -17,8 +17,6 @@ func (a *App) CreateAndStoreResetPasswordToken(email string) (*model.Token, erro
 }
 
 func (a *App) createAndStoreEmailToken(tokenType, email string) (*model.Token, error) {
-	// Clean older tokens so those can't be used to guess the verification
-	// code. MM-30029
 	err := a.store.DeleteTokensByEmail(email, tokenType)
 	if err != nil {
 		return nil, errors.Wrap(err, "error cleaning previous tokens")

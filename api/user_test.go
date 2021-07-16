@@ -1,42 +1,22 @@
 package api
 
 import (
-	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/gorilla/mux"
-	"github.com/saturninoabril/dashboard-server/app"
 	"github.com/saturninoabril/dashboard-server/model"
-	"github.com/saturninoabril/dashboard-server/store"
-	"github.com/saturninoabril/dashboard-server/testlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUsers(t *testing.T) {
-	logger := testlib.MakeLogger(t)
-	config := app.NewConfig()
-
-	sqlStore := store.MakeTestStore(t, logger)
-	defer store.CloseConnection(t, sqlStore)
-
-	userService := app.NewUserService(logger, sqlStore)
-	appService := app.NewApp(logger, sqlStore, config, userService)
-
-	router := mux.NewRouter()
-
-	Register(router, &Context{
-		App:    appService,
-		Logger: logger,
-	})
-	ts := httptest.NewServer(router)
-	defer ts.Close()
+	th := SetupTestHelper(t)
+	defer th.TearDown(t)
 
 	t.Run("log in and out", func(t *testing.T) {
-		client := model.NewClient(ts.URL)
+		client := model.NewClient(th.Server.URL)
 
-		user := signUp(t, client, sqlStore)
+		user := signUp(t, client, th.SqlStore)
 		email := user.Email
 
 		user, err := client.Login(&model.LoginRequest{Email: email, Password: testPassword})
@@ -53,7 +33,7 @@ func TestUsers(t *testing.T) {
 		assert.Empty(t, client.Headers()[model.HeaderAuthorization])
 
 		// Make sure we can't use the token after logout
-		client = model.NewClientWithHeaders(ts.URL, headers)
+		client = model.NewClientWithHeaders(th.Server.URL, headers)
 		user, err = client.GetMe()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "401")
@@ -61,13 +41,13 @@ func TestUsers(t *testing.T) {
 	})
 
 	t.Run("update password", func(t *testing.T) {
-		client := model.NewClient(ts.URL)
+		client := model.NewClient(th.Server.URL)
 
 		err := client.UpdatePassword(&model.UpdatePasswordRequest{})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "401")
 
-		user := signUp(t, client, sqlStore)
+		user := signUp(t, client, th.SqlStore)
 
 		err = client.UpdatePassword(&model.UpdatePasswordRequest{})
 		require.Error(t, err)
@@ -91,7 +71,7 @@ func TestUsers(t *testing.T) {
 
 		// Check if session is present for that user
 		sessionHeader := strings.Split(client.Headers()[model.HeaderAuthorization], " ")
-		session, err := sqlStore.GetSession(sessionHeader[1])
+		session, err := th.SqlStore.GetSession(sessionHeader[1])
 		require.NoError(t, err)
 		require.NotNil(t, session)
 
@@ -100,7 +80,7 @@ func TestUsers(t *testing.T) {
 
 		// CHeck that session is in place again after the login
 		sessionHeader = strings.Split(client.Headers()[model.HeaderAuthorization], " ")
-		session, err = sqlStore.GetSession(sessionHeader[1])
+		session, err = th.SqlStore.GetSession(sessionHeader[1])
 		require.NoError(t, err)
 		require.NotNil(t, session)
 
@@ -113,9 +93,9 @@ func TestUsers(t *testing.T) {
 	})
 
 	t.Run("get me", func(t *testing.T) {
-		client := model.NewClient(ts.URL)
+		client := model.NewClient(th.Server.URL)
 
-		user := signUp(t, client, sqlStore)
+		user := signUp(t, client, th.SqlStore)
 		password := testPassword
 		email := user.Email
 
@@ -137,7 +117,7 @@ func TestUsers(t *testing.T) {
 	})
 
 	t.Run("sign up", func(t *testing.T) {
-		client := model.NewClient(ts.URL)
+		client := model.NewClient(th.Server.URL)
 
 		_, err := client.SignUp(&model.SignUpRequest{})
 		assert.Error(t, err)
@@ -161,5 +141,82 @@ func TestUsers(t *testing.T) {
 		require.NotNil(t, resp)
 		require.NotNil(t, resp.User)
 		assert.Equal(t, strings.ToLower(email), resp.User.Email)
+	})
+
+	t.Run("update user", func(t *testing.T) {
+		client := model.NewClient(th.Server.URL)
+
+		user, err := client.UpdateMe(&model.User{})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "401")
+		assert.Nil(t, user)
+
+		user = signUp(t, client, th.SqlStore)
+		password := testPassword
+		email := user.Email
+
+		user, err = client.Login(&model.LoginRequest{Email: email, Password: password})
+		require.NoError(t, err)
+		require.NotNil(t, user)
+
+		newName := "New Name"
+		user.FirstName = newName
+
+		user, err = client.UpdateMe(user)
+		require.NoError(t, err)
+		require.NotNil(t, user)
+		assert.Equal(t, newName, user.FirstName)
+		assert.Equal(t, "", user.Password)
+
+		_, err = client.UpdateMe(&model.User{ID: "junk"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "400")
+
+		user.Email = ""
+		_, err = client.UpdateMe(user)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "400")
+	})
+
+	t.Run("start email verification", func(t *testing.T) {
+		client := model.NewClient(th.Server.URL)
+
+		err := client.VerifyEmailStart()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "401")
+
+		email := "usertest" + model.NewID() + "@example.com"
+		resp, err := client.SignUp(&model.SignUpRequest{Email: email, Password: testPassword})
+		assert.NoError(t, err)
+		require.NotNil(t, resp)
+		require.False(t, resp.User.EmailVerified)
+
+		err = client.VerifyEmailStart()
+		assert.NoError(t, err)
+	})
+
+	t.Run("complete email verification", func(t *testing.T) {
+		client := model.NewClient(th.Server.URL)
+
+		email := "usertest" + model.NewID() + "@example.com"
+		resp, err := client.SignUp(&model.SignUpRequest{Email: email, Password: testPassword})
+		assert.NoError(t, err)
+		require.NotNil(t, resp)
+		require.False(t, resp.User.EmailVerified)
+
+		err = client.VerifyEmailStart()
+		assert.NoError(t, err)
+
+		tokens, err := th.SqlStore.GetTokensByEmail(email, model.TokenTypeVerifyEmail)
+		assert.NoError(t, err)
+		require.Len(t, tokens, 1)
+		t.Logf("tokens: %v\n", tokens[0])
+
+		err = client.VerifyEmailComplete(&model.VerifyEmailRequest{Token: model.NewID()})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "400")
+
+		err = client.VerifyEmailComplete(&model.VerifyEmailRequest{Token: tokens[0].Token})
+		assert.NoError(t, err)
 	})
 }
