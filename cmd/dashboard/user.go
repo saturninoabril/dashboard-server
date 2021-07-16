@@ -65,11 +65,11 @@ var addNewUserCmd = &cobra.Command{
 			return errors.Wrapf(err, "Error creating user for %s", email)
 		}
 		if role == model.AdminRoleName {
-			roleData, err := store.GetRoleByName(role)
+			roleData, err := store.Role().GetRoleByName(role)
 			if err != nil {
 				return errors.Wrapf(err, "Error creating user for %s", email)
 			}
-			err = store.AddUserRole(user.ID, roleData.ID)
+			err = store.Role().AddUserRole(user.ID, roleData.ID)
 			if err != nil {
 				return errors.Wrapf(err, "Error creating user for %s", email)
 			}
@@ -99,11 +99,11 @@ var addUserRoleCmd = &cobra.Command{
 		if user == nil {
 			return errors.Errorf("User %s doesn't exist", email)
 		}
-		roleData, err := store.GetRoleByName(role)
+		roleData, err := store.Role().GetRoleByName(role)
 		if err != nil {
 			return errors.Wrapf(err, "Error add role %s to user %s", role, email)
 		}
-		err = store.AddUserRole(user.ID, roleData.ID)
+		err = store.Role().AddUserRole(user.ID, roleData.ID)
 		if err != nil {
 			return errors.Wrapf(err, "Error add role %s to user %s", role, email)
 		}
@@ -137,11 +137,11 @@ var removeUserRoleCmd = &cobra.Command{
 		if user == nil {
 			return errors.Errorf("User %s doesn't exist", email)
 		}
-		roleData, err := store.GetRoleByName(role)
+		roleData, err := store.Role().GetRoleByName(role)
 		if err != nil {
 			return errors.Wrapf(err, "Error removing role %s to user %s", role, email)
 		}
-		err = store.DeleteUserRole(user.ID, roleData.ID)
+		err = store.Role().DeleteUserRole(user.ID, roleData.ID)
 		if err != nil {
 			return errors.Wrapf(err, "Error removing role %s to user %s", role, email)
 		}

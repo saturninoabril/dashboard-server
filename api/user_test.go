@@ -71,7 +71,7 @@ func TestUsers(t *testing.T) {
 
 		// Check if session is present for that user
 		sessionHeader := strings.Split(client.Headers()[model.HeaderAuthorization], " ")
-		session, err := th.SqlStore.GetSession(sessionHeader[1])
+		session, err := th.SqlStore.Session().GetSession(sessionHeader[1])
 		require.NoError(t, err)
 		require.NotNil(t, session)
 
@@ -80,7 +80,7 @@ func TestUsers(t *testing.T) {
 
 		// CHeck that session is in place again after the login
 		sessionHeader = strings.Split(client.Headers()[model.HeaderAuthorization], " ")
-		session, err = th.SqlStore.GetSession(sessionHeader[1])
+		session, err = th.SqlStore.Session().GetSession(sessionHeader[1])
 		require.NoError(t, err)
 		require.NotNil(t, session)
 
@@ -207,10 +207,9 @@ func TestUsers(t *testing.T) {
 		err = client.VerifyEmailStart()
 		assert.NoError(t, err)
 
-		tokens, err := th.SqlStore.GetTokensByEmail(email, model.TokenTypeVerifyEmail)
+		tokens, err := th.SqlStore.Token().GetTokensByEmail(email, model.TokenTypeVerifyEmail)
 		assert.NoError(t, err)
 		require.Len(t, tokens, 1)
-		t.Logf("tokens: %v\n", tokens[0])
 
 		err = client.VerifyEmailComplete(&model.VerifyEmailRequest{Token: model.NewID()})
 		require.Error(t, err)
@@ -218,5 +217,34 @@ func TestUsers(t *testing.T) {
 
 		err = client.VerifyEmailComplete(&model.VerifyEmailRequest{Token: tokens[0].Token})
 		assert.NoError(t, err)
+	})
+
+	t.Run("forgot and reset password", func(t *testing.T) {
+		client := model.NewClient(th.Server.URL)
+
+		user := signUp(t, client, th.SqlStore)
+		email := user.Email
+
+		_, err := client.Login(&model.LoginRequest{Email: email, Password: testPassword})
+		assert.NoError(t, err)
+		require.NotNil(t, user)
+
+		err = client.ForgotPassword(&model.ForgotPasswordRequest{Email: user.Email})
+		require.NoError(t, err)
+
+		tokens, err := th.SqlStore.Token().GetTokensByEmail(email, model.TokenTypeResetPassword)
+		assert.NoError(t, err)
+		require.Len(t, tokens, 1)
+
+		newPassword := "Test1234"
+
+		err = client.ResetPassword(&model.ResetPasswordRequest{
+			Password: newPassword,
+			Token:    tokens[0].Token,
+		})
+		require.NoError(t, err)
+
+		_, err = client.Login(&model.LoginRequest{Email: user.Email, Password: newPassword})
+		require.NoError(t, err)
 	})
 }

@@ -179,7 +179,7 @@ func handleVerifyEmailComplete(c *Context, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	token, err := c.App.Store().GetToken(ver.Token)
+	token, err := c.App.Store().Token().GetToken(ver.Token)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		c.writeAndLogError(w, err)
@@ -214,7 +214,7 @@ func handleVerifyEmailComplete(c *Context, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = c.App.Store().DeleteToken(token.Token)
+	err = c.App.Store().Token().DeleteToken(token.Token)
 	if err != nil {
 		// The email was verified, but the token used for this could not be
 		// cleaned up. The expired token cleanup routine will get it later, but
@@ -282,7 +282,7 @@ func handleResetPassword(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := c.App.Store().GetToken(rpr.Token)
+	token, err := c.App.Store().Token().GetToken(rpr.Token)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		c.writeAndLogError(w, err)
@@ -318,14 +318,14 @@ func handleResetPassword(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Invalidate all the user sessions
-	err = c.App.Store().DeleteSessionsForUser(user.ID)
+	err = c.App.Store().Session().DeleteSessionsForUser(user.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		c.writeAndLogError(w, errors.Wrap(err, "failed to invalidate user sessions"))
 		return
 	}
 
-	err = c.App.Store().DeleteToken(token.Token)
+	err = c.App.Store().Token().DeleteToken(token.Token)
 	if err != nil {
 		// The password was reset, but the token used for this could not be
 		// cleaned up. The expired token cleanup routine will get it later, but
@@ -381,7 +381,7 @@ func handleUpdatePassword(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Invalidate all the user sessions
-	err = c.App.Store().DeleteSessionsForUser(user.ID)
+	err = c.App.Store().Session().DeleteSessionsForUser(user.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		c.writeAndLogError(w, errors.Wrap(err, "failed to invalidate user sessions"))

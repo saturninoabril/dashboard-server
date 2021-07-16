@@ -15,7 +15,7 @@ func (s *SqlStore) Initialize() error {
 }
 
 func (s *SqlStore) createRoleIfNotExists(name string) error {
-	role, err := s.GetRoleByName(name)
+	role, err := s.Role().GetRoleByName(name)
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func (s *SqlStore) createRoleIfNotExists(name string) error {
 			ID:   model.NewID(),
 			Name: name,
 		}
-		role, err = s.CreateRole(roleData)
+		role, err = s.Role().CreateRole(roleData)
 		if err != nil {
 			return err
 		}

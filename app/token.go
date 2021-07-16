@@ -17,7 +17,7 @@ func (a *App) CreateAndStoreResetPasswordToken(email string) (*model.Token, erro
 }
 
 func (a *App) createAndStoreEmailToken(tokenType, email string) (*model.Token, error) {
-	err := a.store.DeleteTokensByEmail(email, tokenType)
+	err := a.store.Token().DeleteTokensByEmail(email, tokenType)
 	if err != nil {
 		return nil, errors.Wrap(err, "error cleaning previous tokens")
 	}
@@ -30,7 +30,7 @@ func (a *App) createAndStoreEmailToken(tokenType, email string) (*model.Token, e
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid token")
 	}
-	token, err = a.store.CreateToken(token)
+	token, err = a.store.Token().CreateToken(token)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to save new token")
 	}

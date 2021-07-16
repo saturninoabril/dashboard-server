@@ -14,7 +14,10 @@ import (
 )
 
 type SqlStoreStores struct {
-	user UserStore
+	role    RoleStore
+	session SessionStore
+	token   TokenStore
+	user    UserStore
 }
 
 type SqlStore struct {
@@ -70,6 +73,9 @@ func New(dsn string, tablePrefix string, logger logrus.FieldLogger) (*SqlStore, 
 		logger,
 		stores,
 	}
+	store.stores.role = newSqlRoleStore(store)
+	store.stores.session = newSqlSessionStore(store)
+	store.stores.token = newSqlTokenStore(store)
 	store.stores.user = newSqlUserStore(store)
 
 	err = store.Migrate()

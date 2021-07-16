@@ -51,12 +51,12 @@ func (u *userService) Create(user *model.User) (*model.User, error) {
 		return nil, err
 	}
 
-	role, err := u.store.GetRoleByName(model.UserRoleName)
+	role, err := u.store.Role().GetRoleByName(model.UserRoleName)
 	if err != nil || role == nil {
 		return nil, err
 	}
 
-	if err = u.store.AddUserRole(user.ID, role.ID); err != nil {
+	if err = u.store.Role().AddUserRole(user.ID, role.ID); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +70,7 @@ func (u *userService) Get(id string) (*model.User, error) {
 	if err != nil || user == nil {
 		return nil, err
 	}
-	isAdmin, err := u.store.UserHasRoleByName(user.ID, model.AdminRoleName)
+	isAdmin, err := u.store.Role().UserHasRoleByName(user.ID, model.AdminRoleName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error getting user with id %s", user.ID)
 	}
@@ -101,7 +101,7 @@ func (u *userService) AuthenticateUserForLogin(email, password string) (*model.U
 		return nil, errors.New("bad password")
 	}
 
-	isAdmin, err := u.store.UserHasRoleByName(user.ID, model.AdminRoleName)
+	isAdmin, err := u.store.Role().UserHasRoleByName(user.ID, model.AdminRoleName)
 	if err != nil {
 		return nil, errors.New("error getting admin role for user")
 	}
@@ -124,7 +124,7 @@ func (u *userService) Update(user *model.User) (*model.User, error) {
 func (u *userService) Login(w http.ResponseWriter, r *http.Request, user *model.User) error {
 	session := &model.Session{UserID: user.ID}
 
-	session, err := u.store.CreateSession(session)
+	session, err := u.store.Session().CreateSession(session)
 	if err != nil {
 		return err
 	}
@@ -142,11 +142,11 @@ func (u *userService) Login(w http.ResponseWriter, r *http.Request, user *model.
 
 func (u *userService) Logout(w http.ResponseWriter, r *http.Request, sessionID string) {
 	utils.DeleteSessionCookies(w, r)
-	_ = u.store.DeleteSession(sessionID)
+	_ = u.store.Session().DeleteSession(sessionID)
 }
 
 func (u *userService) GetSession(tokenOrID string) (*model.Session, error) {
-	return u.store.GetSession(tokenOrID)
+	return u.store.Session().GetSession(tokenOrID)
 }
 
 func (u *userService) VerifyEmail(id, email string) error {
@@ -158,7 +158,7 @@ func (u *userService) UnverifyEmail(id, email string) error {
 }
 
 func (u *userService) HasAdminPermission(id string) (bool, error) {
-	hasRole, err := u.store.UserHasRoleByName(id, model.AdminRoleName)
+	hasRole, err := u.store.Role().UserHasRoleByName(id, model.AdminRoleName)
 	if err != nil {
 		return false, errors.Wrapf(err, "error verifying admin permissions for user %s", id)
 	}

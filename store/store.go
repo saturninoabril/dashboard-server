@@ -3,22 +3,29 @@ package store
 import "github.com/saturninoabril/dashboard-server/model"
 
 type Store interface {
+	Role() RoleStore
+	Session() SessionStore
+	Token() TokenStore
 	User() UserStore
+}
 
-	// Roles
+type RoleStore interface {
+	CreateRole(role *model.Role) (*model.Role, error)
 	GetRoleByName(name string) (*model.Role, error)
 	UserHasRole(userID, roleID string) (bool, error)
 	UserHasRoleByName(userID, roleName string) (bool, error)
 	AddUserRole(userID, roleID string) error
 	DeleteUserRole(userID, roleID string) error
+}
 
-	// Session
+type SessionStore interface {
 	CreateSession(session *model.Session) (*model.Session, error)
 	GetSession(idOrToken string) (*model.Session, error)
 	DeleteSession(id string) error
 	DeleteSessionsForUser(userID string) error
+}
 
-	// Token
+type TokenStore interface {
 	CreateToken(token *model.Token) (*model.Token, error)
 	GetToken(tokenValue string) (*model.Token, error)
 	GetTokensByEmail(email, tokenType string) ([]*model.Token, error)

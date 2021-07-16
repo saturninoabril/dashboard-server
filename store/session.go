@@ -9,6 +9,22 @@ import (
 	"github.com/saturninoabril/dashboard-server/model"
 )
 
+type SqlSessionStore struct {
+	*SqlStore
+}
+
+func newSqlSessionStore(sqlStore *SqlStore) SessionStore {
+	s := &SqlSessionStore{
+		SqlStore: sqlStore,
+	}
+
+	return s
+}
+
+func (s *SqlStore) Session() SessionStore {
+	return s.stores.session
+}
+
 var sessionSelect sq.SelectBuilder
 
 func init() {
@@ -24,7 +40,7 @@ func init() {
 }
 
 // CreateSession inserts a new session.
-func (s *SqlStore) CreateSession(session *model.Session) (*model.Session, error) {
+func (s *SqlSessionStore) CreateSession(session *model.Session) (*model.Session, error) {
 	session.PreSave()
 
 	_, err := s.execBuilder(s.db, sq.
@@ -46,7 +62,7 @@ func (s *SqlStore) CreateSession(session *model.Session) (*model.Session, error)
 }
 
 // GetSession fetches the given session by id or token. Deletes and does not return expired sessions.
-func (s *SqlStore) GetSession(idOrToken string) (*model.Session, error) {
+func (s *SqlSessionStore) GetSession(idOrToken string) (*model.Session, error) {
 	var session model.Session
 	err := s.getBuilder(s.db, &session, sessionSelect.From(s.tablePrefix+"Session").Where(sq.Or{sq.Eq{"ID": idOrToken}, sq.Eq{"Token": idOrToken}}))
 	if err == sql.ErrNoRows {
@@ -71,7 +87,7 @@ func (s *SqlStore) GetSession(idOrToken string) (*model.Session, error) {
 }
 
 // DeleteSession deletes a session by ID.
-func (s *SqlStore) DeleteSession(id string) error {
+func (s *SqlSessionStore) DeleteSession(id string) error {
 	_, err := s.execBuilder(s.db, sq.Delete(s.tablePrefix+"Session").Where("ID = ?", id))
 	if err != nil {
 		s.logger.
@@ -86,7 +102,7 @@ func (s *SqlStore) DeleteSession(id string) error {
 }
 
 // DeleteSessionsForUser deletes all the sessions for a user
-func (s *SqlStore) DeleteSessionsForUser(userID string) error {
+func (s *SqlSessionStore) DeleteSessionsForUser(userID string) error {
 	_, err := s.execBuilder(s.db, sq.Delete(s.tablePrefix+"Session").Where("UserID = ?", userID))
 	if err != nil {
 		s.logger.

@@ -8,6 +8,22 @@ import (
 	"github.com/saturninoabril/dashboard-server/model"
 )
 
+type SqlTokenStore struct {
+	*SqlStore
+}
+
+func newSqlTokenStore(sqlStore *SqlStore) TokenStore {
+	s := &SqlTokenStore{
+		SqlStore: sqlStore,
+	}
+
+	return s
+}
+
+func (s *SqlStore) Token() TokenStore {
+	return s.stores.token
+}
+
 var tokenSelect sq.SelectBuilder
 
 func init() {
@@ -20,7 +36,7 @@ func init() {
 }
 
 // CreateToken inserts a new token.
-func (s *SqlStore) CreateToken(token *model.Token) (*model.Token, error) {
+func (s *SqlTokenStore) CreateToken(token *model.Token) (*model.Token, error) {
 	err := token.IsValid()
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid token")
@@ -43,7 +59,7 @@ func (s *SqlStore) CreateToken(token *model.Token) (*model.Token, error) {
 }
 
 // GetToken fetches the given token by token value.
-func (s *SqlStore) GetToken(tokenValue string) (*model.Token, error) {
+func (s *SqlTokenStore) GetToken(tokenValue string) (*model.Token, error) {
 	var token model.Token
 	err := s.getBuilder(s.db, &token, tokenSelect.From(s.tablePrefix+"Tokens").Where("Token = ?", tokenValue))
 	if err == sql.ErrNoRows {
@@ -56,7 +72,7 @@ func (s *SqlStore) GetToken(tokenValue string) (*model.Token, error) {
 }
 
 // GetTokensByEmail fetches the tokens for the passed email
-func (s *SqlStore) GetTokensByEmail(email, tokenType string) ([]*model.Token, error) {
+func (s *SqlTokenStore) GetTokensByEmail(email, tokenType string) ([]*model.Token, error) {
 	var tokens []*model.Token
 	extraField, err := model.CreateTokenTypeResetPasswordExtra(email)
 	if err != nil {
@@ -77,7 +93,7 @@ func (s *SqlStore) GetTokensByEmail(email, tokenType string) ([]*model.Token, er
 }
 
 // DeleteToken deletes a token.
-func (s *SqlStore) DeleteToken(tokenValue string) error {
+func (s *SqlTokenStore) DeleteToken(tokenValue string) error {
 	_, err := s.execBuilder(s.db,
 		sq.Delete("").From(s.tablePrefix+"Tokens").Where("Token = ?", tokenValue),
 	)
@@ -90,7 +106,7 @@ func (s *SqlStore) DeleteToken(tokenValue string) error {
 
 // DeleteTokensByEmail deletes all the tokes, of one type, belonging to the
 // passed email
-func (s *SqlStore) DeleteTokensByEmail(email, tokenType string) error {
+func (s *SqlTokenStore) DeleteTokensByEmail(email, tokenType string) error {
 	tokens, err := s.GetTokensByEmail(email, tokenType)
 	if err != nil {
 		return errors.Wrapf(err, "error deleting tokens for email %s", email)
@@ -105,7 +121,7 @@ func (s *SqlStore) DeleteTokensByEmail(email, tokenType string) error {
 }
 
 // CleanupTokenStore removes tokens that are past the defined expiry time.
-func (s *SqlStore) CleanupTokenStore(expiryTimeMillis int64) {
+func (s *SqlTokenStore) CleanupTokenStore(expiryTimeMillis int64) {
 	s.logger.Debug("Cleaning up token store.")
 
 	deltime := model.GetMillis() - expiryTimeMillis
