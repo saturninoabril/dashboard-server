@@ -42,4 +42,5 @@ type UserStore interface {
 	UnverifyEmail(id, email string) error
 	UpdatePassword(id, password string) error
 	UpdateUser(user *model.User) error
+	UpdateUserState(userID string, state string) error
 }

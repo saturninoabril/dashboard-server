@@ -38,7 +38,7 @@ func (s *SqlStore) setSystemValue(e execer, key, value string) error {
 	}
 
 	result, err = s.execBuilder(e,
-		sq.Insert("System").Columns("Key", "Value").Values(key, value),
+		sq.Insert(s.tablePrefix+"System").Columns("Key", "Value").Values(key, value),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert system key %s", key)

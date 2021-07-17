@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/saturninoabril/dashboard-server/model"
+	"github.com/saturninoabril/dashboard-server/testlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUsers(t *testing.T) {
-	th := SetupTestHelper(t)
+	th := SetupApiTestHelper(t)
 	defer th.TearDown(t)
 
 	t.Run("log in and out", func(t *testing.T) {
@@ -122,7 +123,7 @@ func TestUsers(t *testing.T) {
 		_, err := client.SignUp(&model.SignUpRequest{})
 		assert.Error(t, err)
 
-		email := "usertest" + model.NewID() + "@example.com"
+		email := testlib.GetTestEmail()
 
 		_, err = client.SignUp(&model.SignUpRequest{Email: email, Password: "password"})
 		assert.Error(t, err)
@@ -135,7 +136,7 @@ func TestUsers(t *testing.T) {
 		assert.Equal(t, "", resp.User.Password)
 		assert.Equal(t, 33, len(client.Headers()[model.HeaderAuthorization])) // 33 is length of "bearer <token>""
 
-		email = "USERTEST" + model.NewID() + "@example.com"
+		email = strings.ToUpper(testlib.GetTestEmail())
 		resp, err = client.SignUp(&model.SignUpRequest{Email: email, Password: testPassword})
 		assert.NoError(t, err)
 		require.NotNil(t, resp)
@@ -185,7 +186,7 @@ func TestUsers(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "401")
 
-		email := "usertest" + model.NewID() + "@example.com"
+		email := testlib.GetTestEmail()
 		resp, err := client.SignUp(&model.SignUpRequest{Email: email, Password: testPassword})
 		assert.NoError(t, err)
 		require.NotNil(t, resp)
@@ -198,7 +199,7 @@ func TestUsers(t *testing.T) {
 	t.Run("complete email verification", func(t *testing.T) {
 		client := model.NewClient(th.Server.URL)
 
-		email := "usertest" + model.NewID() + "@example.com"
+		email := testlib.GetTestEmail()
 		resp, err := client.SignUp(&model.SignUpRequest{Email: email, Password: testPassword})
 		assert.NoError(t, err)
 		require.NotNil(t, resp)

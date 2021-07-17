@@ -171,3 +171,17 @@ func (s *SqlUserStore) UpdateUser(user *model.User) error {
 
 	return nil
 }
+
+func (s *SqlUserStore) UpdateUserState(userID string, state string) error {
+	currentTime := model.GetMillis()
+	_, err := s.execBuilder(s.db,
+		sq.Update("").Table(s.tablePrefix+"Users").Where("ID = ?", userID).
+			Set("UpdateAt", currentTime).
+			Set("State", state),
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to update user state")
+	}
+
+	return nil
+}

@@ -16,14 +16,14 @@ const (
 	testPassword = "Password12"
 )
 
-type TestHelper struct {
+type ApiTestHelper struct {
 	App      *app.App
 	Router   *mux.Router
 	Server   *httptest.Server
 	SqlStore *store.SqlStore
 }
 
-func SetupTestHelper(t *testing.T) *TestHelper {
+func SetupApiTestHelper(t *testing.T) *ApiTestHelper {
 	logger := testlib.MakeLogger(t)
 	config := app.NewConfig()
 	app.SetDevConfig(&config)
@@ -48,7 +48,7 @@ func SetupTestHelper(t *testing.T) *TestHelper {
 
 	ts := httptest.NewServer(router)
 
-	return &TestHelper{
+	return &ApiTestHelper{
 		App:      appService,
 		Router:   router,
 		Server:   ts,
@@ -56,7 +56,7 @@ func SetupTestHelper(t *testing.T) *TestHelper {
 	}
 }
 
-func (th *TestHelper) TearDown(t *testing.T) {
+func (th *ApiTestHelper) TearDown(t *testing.T) {
 	th.Server.Close()
 	store.CloseConnection(t, th.SqlStore)
 }
@@ -74,5 +74,5 @@ func signUpWithEmail(t *testing.T, email string, client *model.Client, sqlStore 
 }
 
 func signUp(t *testing.T, client *model.Client, sqlStore *store.SqlStore) *model.User {
-	return signUpWithEmail(t, model.NewID()+"@example.com", client, sqlStore)
+	return signUpWithEmail(t, testlib.GetTestEmail(), client, sqlStore)
 }
