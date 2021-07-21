@@ -22,10 +22,10 @@ const (
 // Token is a one-time-use expiring object used in place of passwords or other
 // authentication values.
 type Token struct {
-	Token    string
-	CreateAt int64
-	Type     string
-	Extra    string
+	Token    string `json:"token"`
+	CreateAt int64  `json:"create_at" db:"create_at"`
+	Type     string `json:"type"`
+	Extra    string `json:"extra"`
 }
 
 // NewToken returns a new token.

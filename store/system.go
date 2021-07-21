@@ -11,8 +11,10 @@ import (
 func (s *SqlStore) getSystemValue(q queryer, key string) (string, error) {
 	var value string
 
-	err := s.getBuilder(q, &value,
-		sq.Select("Value").From(s.tablePrefix+"System").Where("Key = ?", key),
+	err := s.getBuilder(
+		q,
+		&value,
+		sq.Select("value").From(s.tablePrefix+"systems").Where("key = ?", key),
 	)
 	if err == sql.ErrNoRows {
 		return "", nil
@@ -25,8 +27,11 @@ func (s *SqlStore) getSystemValue(q queryer, key string) (string, error) {
 
 // setSystemValue updates the System table for the given key.
 func (s *SqlStore) setSystemValue(e execer, key, value string) error {
-	result, err := s.execBuilder(e,
-		sq.Update(s.tablePrefix+"System").Set("Value", value).Where("Key = ?", key),
+	result, err := s.execBuilder(
+		e,
+		sq.Update(s.tablePrefix+"systems").
+			Where("key = ?", key).
+			Set("value", value),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update system key %s", key)
@@ -37,8 +42,11 @@ func (s *SqlStore) setSystemValue(e execer, key, value string) error {
 		return nil
 	}
 
-	result, err = s.execBuilder(e,
-		sq.Insert(s.tablePrefix+"System").Columns("Key", "Value").Values(key, value),
+	result, err = s.execBuilder(
+		e,
+		sq.Insert(s.tablePrefix+"systems").
+			Columns("key", "value").
+			Values(key, value),
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to insert system key %s", key)

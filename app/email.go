@@ -68,7 +68,7 @@ func (a *App) SendVerifyEmailEmail(email, siteURL string, token *model.Token) er
 	bodyPage.Props["Title"] = "Verify your email address"
 	bodyPage.Props["Info"] = "Enter the code below into the browser window where you began creating your Dashboard account."
 	bodyPage.Props["Footer"] = "This email address was used to create an account with the Dashboard. \nIf it was not you, you can safely ignore this email."
-	bodyPage.Props["Token"] = fmt.Sprintf("%s %s", token.Token[:3], token.Token[3:])
+	bodyPage.Props["token"] = fmt.Sprintf("%s %s", token.Token[:3], token.Token[3:])
 
 	if a.Config().Dev {
 		a.logger.Debugf("Verification code for %s: %s", email, token.Token)

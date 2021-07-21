@@ -23,8 +23,6 @@ type contextHandler struct {
 	requiresSession      bool
 	requiresVerification bool
 	requiresAdmin        bool
-	allowApiKeySession   bool
-	allowJWTTokenSession bool
 	isStatic             bool
 }
 
@@ -84,10 +82,6 @@ func (h contextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h contextHandler) isValidSession(session *model.Session) bool {
 	if session == nil {
-		return false
-	}
-
-	if session.APIKeySession && (!h.allowApiKeySession && !h.allowJWTTokenSession) {
 		return false
 	}
 

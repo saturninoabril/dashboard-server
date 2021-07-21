@@ -8,15 +8,15 @@ const (
 type Role struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
-	CreateAt int64  `json:"create_at"`
-	UpdateAt int64  `json:"update_at"`
+	CreateAt int64  `json:"create_at" db:"create_at"`
+	UpdateAt int64  `json:"update_at" db:"update_at"`
 }
 
 type UserRole struct {
-	UserID   string `json:"user_id"`
-	RoleID   string `json:"role_id"`
-	CreateAt int64  `json:"create_at"`
-	UpdateAt int64  `json:"update_at"`
+	UserID   string `json:"user_id" db:"user_id"`
+	RoleID   string `json:"role_id" db:"role_id"`
+	CreateAt int64  `json:"create_at" db:"create_at"`
+	UpdateAt int64  `json:"update_at" db:"update_at"`
 }
 
 // CreatePreSave will set the correct values for a new role that is about to be

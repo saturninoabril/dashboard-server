@@ -28,10 +28,10 @@ var tokenSelect sq.SelectBuilder
 
 func init() {
 	tokenSelect = sq.Select(
-		"Token",
-		"CreateAt",
-		"Type",
-		"Extra",
+		"token",
+		"create_at",
+		"type",
+		"extra",
 	)
 }
 
@@ -42,14 +42,15 @@ func (s *SqlTokenStore) CreateToken(token *model.Token) (*model.Token, error) {
 		return nil, errors.Wrap(err, "invalid token")
 	}
 
-	_, err = s.execBuilder(s.db, sq.
-		Insert(s.tablePrefix+"Tokens").
-		SetMap(map[string]interface{}{
-			"Token":    token.Token,
-			"CreateAt": token.CreateAt,
-			"Type":     token.Type,
-			"Extra":    token.Extra,
-		}),
+	_, err = s.execBuilder(
+		s.db,
+		sq.Insert(s.tablePrefix+"tokens").
+			SetMap(map[string]interface{}{
+				"token":     token.Token,
+				"create_at": token.CreateAt,
+				"type":      token.Type,
+				"extra":     token.Extra,
+			}),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create token")
@@ -61,7 +62,11 @@ func (s *SqlTokenStore) CreateToken(token *model.Token) (*model.Token, error) {
 // GetToken fetches the given token by token value.
 func (s *SqlTokenStore) GetToken(tokenValue string) (*model.Token, error) {
 	var token model.Token
-	err := s.getBuilder(s.db, &token, tokenSelect.From(s.tablePrefix+"Tokens").Where("Token = ?", tokenValue))
+	err := s.getBuilder(
+		s.db,
+		&token,
+		tokenSelect.From(s.tablePrefix+"tokens").Where("token = ?", tokenValue),
+	)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	} else if err != nil {
@@ -81,7 +86,9 @@ func (s *SqlTokenStore) GetTokensByEmail(email, tokenType string) ([]*model.Toke
 	err = s.selectBuilder(
 		s.db,
 		&tokens,
-		tokenSelect.From(s.tablePrefix+"Tokens").Where("Extra = ?", extraField).Where("Type = ?", tokenType),
+		tokenSelect.From(s.tablePrefix+"tokens").
+			Where("extra = ?", extraField).
+			Where("type = ?", tokenType),
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -94,8 +101,9 @@ func (s *SqlTokenStore) GetTokensByEmail(email, tokenType string) ([]*model.Toke
 
 // DeleteToken deletes a token.
 func (s *SqlTokenStore) DeleteToken(tokenValue string) error {
-	_, err := s.execBuilder(s.db,
-		sq.Delete("").From(s.tablePrefix+"Tokens").Where("Token = ?", tokenValue),
+	_, err := s.execBuilder(
+		s.db,
+		sq.Delete("").From(s.tablePrefix+"tokens").Where("token = ?", tokenValue),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete token")
@@ -125,8 +133,9 @@ func (s *SqlTokenStore) CleanupTokenStore(expiryTimeMillis int64) {
 	s.logger.Debug("Cleaning up token store.")
 
 	deltime := model.GetMillis() - expiryTimeMillis
-	_, err := s.execBuilder(s.db,
-		sq.Delete("").From(s.tablePrefix+"Tokens").Where("CreateAt < ?", deltime),
+	_, err := s.execBuilder(
+		s.db,
+		sq.Delete("").From(s.tablePrefix+"tokens").Where("create_at < ?", deltime),
 	)
 	if err != nil {
 		s.logger.WithError(err).Error("Unable to cleanup token store")

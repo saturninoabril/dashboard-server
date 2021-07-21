@@ -1,6 +1,8 @@
 package store
 
-import "github.com/saturninoabril/dashboard-server/model"
+import (
+	"github.com/saturninoabril/dashboard-server/model"
+)
 
 // Initialize imports initial values
 func (s *SqlStore) Initialize() error {

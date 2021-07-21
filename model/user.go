@@ -30,15 +30,15 @@ const (
 // User model represents a user on the system.
 type User struct {
 	ID            string `json:"id"`
-	CreateAt      int64  `json:"create_at"`
-	UpdateAt      int64  `json:"update_at"`
+	CreateAt      int64  `json:"create_at" db:"create_at"`
+	UpdateAt      int64  `json:"update_at" db:"update_at"`
 	Email         string `json:"email"`
-	EmailVerified bool   `json:"email_verified"`
+	EmailVerified bool   `json:"email_verified" db:"email_verified"`
 	Password      string `json:"password,omitempty"`
-	FirstName     string `json:"first_name"`
-	LastName      string `json:"last_name"`
+	FirstName     string `json:"first_name" db:"first_name"`
+	LastName      string `json:"last_name" db:"last_name"`
 	State         string `json:"state"`
-	IsAdmin       bool   `json:"is_admin"`
+	IsAdmin       bool   `json:"is_admin" db:"is_admin"`
 }
 
 // IsValid will determine if the user fields are all valid.

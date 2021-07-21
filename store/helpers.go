@@ -8,20 +8,13 @@ import (
 )
 
 // tableExists determines if the given table name exists in the database.
-func (store *SqlStore) tableExists(tableName string) (bool, error) {
+func (s *SqlStore) tableExists(tableName string) (bool, error) {
 	var tableExists bool
 
-	switch store.db.DriverName() {
-	case "postgres":
-		err := store.get(store.db, &tableExists,
-			"SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'system')",
-		)
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to check if %s table exists", tableName)
-		}
-
-	default:
-		return false, errors.Errorf("unsupported driver %s", store.db.DriverName())
+	if err := s.get(s.db, &tableExists,
+		"SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'system')",
+	); err != nil {
+		return false, errors.Wrapf(err, "failed to check if %s table exists", tableName)
 	}
 
 	return tableExists, nil

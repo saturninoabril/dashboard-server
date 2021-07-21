@@ -8,7 +8,7 @@ const (
 	// SessionCookieUser is the cookie key for the logged in user.
 	SessionCookieUser = "DASHBOARDUSERID"
 	// SessionHeader is the header key for a session.
-	SessionHeader = "Token"
+	SessionHeader = "token"
 	// SessionLengthMilliseconds is the session length in milliseconds.
 	SessionLengthMilliseconds = 1000 * 60 * 60 * 24 * 15 // 15 days
 	// HeaderRequestedWith is the HTTP header X-Requested-With.
@@ -31,13 +31,12 @@ const (
 
 // Session is an authentication session for a user.
 type Session struct {
-	ID            string
-	Token         string
-	CreateAt      int64
-	ExpiresAt     int64
-	UserID        string
-	CSRFToken     string
-	APIKeySession bool
+	ID        string `json:"id"`
+	Token     string `json:"token"`
+	CreateAt  int64  `json:"create_at" db:"create_at"`
+	ExpiresAt int64  `json:"expires_at" db:"expires_at"`
+	UserID    string `json:"user_id" db:"user_id"`
+	CSRFToken string `json:"csrf_token" db:"csrf_token"`
 }
 
 // PreSave will set the ID, Token, CSRFToken, ExpiresAt and CreateAt for the session.
