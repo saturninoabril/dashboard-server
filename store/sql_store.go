@@ -14,10 +14,12 @@ import (
 )
 
 type SqlStoreStores struct {
-	role    RoleStore
-	session SessionStore
-	token   TokenStore
-	user    UserStore
+	oauthState     OAuthStateStore
+	role           RoleStore
+	session        SessionStore
+	token          TokenStore
+	user           UserStore
+	user_auth_info UserAuthInfoStore
 }
 
 type SqlStore struct {
@@ -73,10 +75,12 @@ func New(dsn string, tablePrefix string, logger logrus.FieldLogger) (*SqlStore, 
 		logger,
 		stores,
 	}
+	store.stores.oauthState = newSqlOAuthStateStore(store)
 	store.stores.role = newSqlRoleStore(store)
 	store.stores.session = newSqlSessionStore(store)
 	store.stores.token = newSqlTokenStore(store)
 	store.stores.user = newSqlUserStore(store)
+	store.stores.user_auth_info = newSqlUserAuthInfoStore(store)
 
 	err = store.Migrate()
 	if err != nil {

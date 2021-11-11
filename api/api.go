@@ -2,7 +2,9 @@ package api
 
 import "github.com/gorilla/mux"
 
-const pathPrefix = "/api/v1"
+const (
+	pathPrefix = "/api/v1"
+)
 
 // Register registers the API endpoints on the given router.
 func Register(public *mux.Router, context *Context) {
@@ -15,4 +17,5 @@ func initializePublicRoutes(rootRouter *mux.Router, context *Context) {
 
 	initHealth(apiRouter, context)
 	initUser(apiRouter, context)
+	initOAuth(apiRouter, context)
 }

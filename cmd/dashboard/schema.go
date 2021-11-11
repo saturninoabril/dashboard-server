@@ -23,11 +23,11 @@ var schemaMigrateCmd = &cobra.Command{
 	RunE: func(command *cobra.Command, args []string) error {
 		command.SilenceUsage = true
 
-		_, err := cmdStore(command)
+		store, err := cmdStore(command)
 		if err != nil {
 			return err
 		}
 
-		return nil
+		return store.Migrate()
 	},
 }

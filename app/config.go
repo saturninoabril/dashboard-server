@@ -2,6 +2,12 @@ package app
 
 import "github.com/saturninoabril/dashboard-server/internal/email"
 
+type GithubOAuth struct {
+	ClientID      string
+	ClientSecret  string
+	EncryptionKey string
+}
+
 // Config is the config used by the dashboard server app.
 type Config struct {
 	// the location to which a user might point their browser
@@ -9,6 +15,9 @@ type Config struct {
 
 	// the location to which the API should be called if is different than SiteURL
 	APIURL string
+
+	// Github OAuth configuration
+	GithubOAuth GithubOAuth
 
 	// email server related configuration
 	Email email.Config

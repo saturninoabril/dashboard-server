@@ -39,12 +39,16 @@ func init() {
 		)
 }
 
+func (s *SqlSessionStore) getSessionTable() string {
+	return s.tablePrefix + "session"
+}
+
 // CreateSession inserts a new session.
 func (s *SqlSessionStore) CreateSession(session *model.Session) (*model.Session, error) {
 	session.PreSave()
 
 	_, err := s.execBuilder(s.db, sq.
-		Insert(s.tablePrefix+"sessions").
+		Insert(s.getSessionTable()).
 		SetMap(map[string]interface{}{
 			"id":         session.ID,
 			"token":      session.Token,
@@ -61,13 +65,15 @@ func (s *SqlSessionStore) CreateSession(session *model.Session) (*model.Session,
 	return session, nil
 }
 
-// GetSession fetches the given session by id or token. Deletes and does not return expired sessions.
+// GetSession fetches the given session by id or token. Does not return expired sessions.
 func (s *SqlSessionStore) GetSession(idOrToken string) (*model.Session, error) {
+	sessionTable := s.getSessionTable()
+
 	var session model.Session
 	err := s.getBuilder(
 		s.db,
 		&session,
-		sessionSelect.From(s.tablePrefix+"sessions").
+		sessionSelect.From(sessionTable).
 			Where(sq.Or{sq.Eq{"id": idOrToken}, sq.Eq{"token": idOrToken}}),
 	)
 	if err == sql.ErrNoRows {
@@ -79,7 +85,7 @@ func (s *SqlSessionStore) GetSession(idOrToken string) (*model.Session, error) {
 	if session.IsExpired() {
 		_, err = s.execBuilder(
 			s.db,
-			sq.Delete("sessions").Where("id = ?", session.ID),
+			sq.Delete(sessionTable).Where("id = ?", session.ID),
 		)
 		if err != nil {
 			s.logger.
@@ -98,7 +104,7 @@ func (s *SqlSessionStore) GetSession(idOrToken string) (*model.Session, error) {
 func (s *SqlSessionStore) DeleteSession(id string) error {
 	_, err := s.execBuilder(
 		s.db,
-		sq.Delete(s.tablePrefix+"sessions").Where("id = ?", id),
+		sq.Delete(s.getSessionTable()).Where("id = ?", id),
 	)
 	if err != nil {
 		s.logger.
@@ -116,7 +122,7 @@ func (s *SqlSessionStore) DeleteSession(id string) error {
 func (s *SqlSessionStore) DeleteSessionsForUser(userID string) error {
 	_, err := s.execBuilder(
 		s.db,
-		sq.Delete(s.tablePrefix+"sessions").
+		sq.Delete(s.getSessionTable()).
 			Where("user_id = ?", userID),
 	)
 	if err != nil {

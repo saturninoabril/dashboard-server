@@ -3,10 +3,18 @@ package store
 import "github.com/saturninoabril/dashboard-server/model"
 
 type Store interface {
+	OAuthState() OAuthStateStore
 	Role() RoleStore
 	Session() SessionStore
 	Token() TokenStore
 	User() UserStore
+	UserAuthInfo() UserAuthInfoStore
+}
+
+type OAuthStateStore interface {
+	CreateOAuthState() (*model.OAuthState, error)
+	GetOAuthState(idOrToken string) (*model.OAuthState, error)
+	DeleteOAuthState(id string) error
 }
 
 type RoleStore interface {
@@ -32,6 +40,12 @@ type TokenStore interface {
 	DeleteToken(tokenValue string) error
 	DeleteTokensByEmail(email, tokenType string) error
 	CleanupTokenStore(expiryTimeMillis int64)
+}
+
+type UserAuthInfoStore interface {
+	CreateUserAuthInfo(user *model.UserAuthInfo) (*model.UserAuthInfo, error)
+	GetUserAuthInfo(userID, oauthProvider string) (*model.UserAuthInfo, error)
+	UpdateUserAuthInfoToken(user *model.UserAuthInfo) error
 }
 
 type UserStore interface {

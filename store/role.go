@@ -46,13 +46,21 @@ func init() {
 		)
 }
 
+func (s *SqlRoleStore) getRoleTable() string {
+	return s.tablePrefix + "role"
+}
+
+func (s *SqlRoleStore) getUserRoleTable() string {
+	return s.tablePrefix + "user_role"
+}
+
 // CreateRole inserts a new role.
 func (s *SqlRoleStore) CreateRole(role *model.Role) (*model.Role, error) {
 	role.CreatePreSave()
 
 	_, err := s.execBuilder(
 		s.db,
-		sq.Insert(s.tablePrefix+"roles").
+		sq.Insert(s.getRoleTable()).
 			SetMap(map[string]interface{}{
 				"id":        role.ID,
 				"name":      role.Name,
@@ -76,7 +84,7 @@ func (s *SqlRoleStore) GetRoleByName(name string) (*model.Role, error) {
 	err := s.getBuilder(
 		s.db,
 		&role,
-		roleSelect.From(s.tablePrefix+"roles").
+		roleSelect.From(s.getRoleTable()).
 			Where("name = $1", name),
 	)
 	if err == sql.ErrNoRows {
@@ -92,7 +100,7 @@ func (s *SqlRoleStore) UserHasRole(userID, roleID string) (bool, error) {
 	var userRole model.UserRole
 	err := s.getBuilder(
 		s.db, &userRole,
-		userRoleSelect.From(s.tablePrefix+"user_roles").
+		userRoleSelect.From(s.getUserRoleTable()).
 			Where("user_id = $1 AND role_id = $2", userID, roleID),
 	)
 	if err == sql.ErrNoRows {
@@ -107,8 +115,8 @@ func (s *SqlRoleStore) UserHasRole(userID, roleID string) (bool, error) {
 func (s *SqlRoleStore) UserHasRoleByName(userID, roleName string) (bool, error) {
 	var userRole model.UserRole
 	roleSelectByName := sq.Select("ur.user_id", "ur.role_id").
-		From(s.tablePrefix + "user_roles ur").
-		Join(s.tablePrefix + "roles r ON ur.role_id = r.id")
+		From(s.getUserRoleTable() + " ur").
+		Join(s.getRoleTable() + " r ON ur.role_id = r.id")
 	err := s.getBuilder(s.db, &userRole, roleSelectByName.
 		Where("ur.user_id = $1 AND r.name = $2", userID, roleName))
 	if err == sql.ErrNoRows {
@@ -122,7 +130,7 @@ func (s *SqlRoleStore) UserHasRoleByName(userID, roleName string) (bool, error) 
 
 func (s *SqlRoleStore) AddUserRole(userID, roleID string) error {
 	_, err := s.execBuilder(s.db, sq.
-		Insert(s.tablePrefix+"user_roles").
+		Insert(s.getUserRoleTable()).
 		SetMap(map[string]interface{}{
 			"user_id": userID,
 			"role_id": roleID,
@@ -136,7 +144,7 @@ func (s *SqlRoleStore) AddUserRole(userID, roleID string) error {
 }
 
 func (s *SqlRoleStore) DeleteUserRole(userID, roleID string) error {
-	query := sq.Delete(s.tablePrefix+"user_roles").
+	query := sq.Delete(s.getUserRoleTable()).
 		Where("user_id = $1 AND role_id = $2", userID, roleID)
 	if _, err := s.execBuilder(s.db, query); err != nil {
 		return errors.Wrapf(err, "failed to add role %s to user %s", roleID, userID)

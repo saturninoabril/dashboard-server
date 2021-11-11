@@ -50,20 +50,34 @@ var serverCmd = &cobra.Command{
 		if config.APIURL == "" {
 			config.APIURL = config.SiteURL
 		}
+
+		// Set email config
 		config.Email.SMTPUsername, _ = command.Flags().GetString("smtp-username")
 		config.Email.SMTPPassword, _ = command.Flags().GetString("smtp-password")
 		config.Email.SMTPServer, _ = command.Flags().GetString("smtp-server")
 		config.Email.SMTPPort, _ = command.Flags().GetString("smtp-port")
 		config.Email.SMTPServerTimeout, _ = command.Flags().GetInt("smtp-servertimeout")
 
-		dev, _ := command.Flags().GetBool("dev")
-		if dev {
-			app.SetDevConfig(&config)
-			logger.Debug("Using dev configuration")
+		// Set Github config
+		githubClient := os.Getenv("DASHBOARD_GITHUB_CLIENT")
+		githubSecret := os.Getenv("DASHBOARD_GITHUB_SECRET")
+		encryptionKey := os.Getenv("DASHBOARD_ENCRYPTION_KEY")
+		config.GithubOAuth.ClientID = githubClient
+		config.GithubOAuth.ClientSecret = githubSecret
+		config.GithubOAuth.EncryptionKey = encryptionKey
+		if githubClient == "" || githubSecret == "" {
+			logger.Debug("No Github config found")
 		}
 
 		database, _ := command.Flags().GetString("database")
 		tablePrefix, _ := command.Flags().GetString("table-prefix")
+		dev, _ := command.Flags().GetBool("dev")
+		if dev {
+			app.SetDevConfig(&config)
+			logger.Debug("Using dev configuration")
+			logger.Debugf("Using database: '%s'\n", database)
+			logger.Debugf("Using table prefix: '%s'\n", tablePrefix)
+		}
 
 		store, err := store.New(database, tablePrefix, logger)
 		if err != nil {

@@ -27,6 +27,7 @@ const (
 	UserStateLocked = "locked"
 )
 
+// TODO: cleanup
 // User model represents a user on the system.
 type User struct {
 	ID            string `json:"id"`
@@ -35,8 +36,8 @@ type User struct {
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified" db:"email_verified"`
 	Password      string `json:"password,omitempty"`
-	FirstName     string `json:"first_name" db:"first_name"`
-	LastName      string `json:"last_name" db:"last_name"`
+	FirstName     string `json:"first_name,omitempty" db:"first_name"`
+	LastName      string `json:"last_name,omitempty" db:"last_name"`
 	State         string `json:"state"`
 	IsAdmin       bool   `json:"is_admin" db:"is_admin"`
 }

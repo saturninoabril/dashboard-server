@@ -35,6 +35,10 @@ func init() {
 	)
 }
 
+func (s *SqlTokenStore) getTokenTable() string {
+	return s.tablePrefix + "token"
+}
+
 // CreateToken inserts a new token.
 func (s *SqlTokenStore) CreateToken(token *model.Token) (*model.Token, error) {
 	err := token.IsValid()
@@ -44,7 +48,7 @@ func (s *SqlTokenStore) CreateToken(token *model.Token) (*model.Token, error) {
 
 	_, err = s.execBuilder(
 		s.db,
-		sq.Insert(s.tablePrefix+"tokens").
+		sq.Insert(s.getTokenTable()).
 			SetMap(map[string]interface{}{
 				"token":     token.Token,
 				"create_at": token.CreateAt,
@@ -65,7 +69,7 @@ func (s *SqlTokenStore) GetToken(tokenValue string) (*model.Token, error) {
 	err := s.getBuilder(
 		s.db,
 		&token,
-		tokenSelect.From(s.tablePrefix+"tokens").Where("token = ?", tokenValue),
+		tokenSelect.From(s.getTokenTable()).Where("token = ?", tokenValue),
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -86,7 +90,7 @@ func (s *SqlTokenStore) GetTokensByEmail(email, tokenType string) ([]*model.Toke
 	err = s.selectBuilder(
 		s.db,
 		&tokens,
-		tokenSelect.From(s.tablePrefix+"tokens").
+		tokenSelect.From(s.getTokenTable()).
 			Where("extra = ?", extraField).
 			Where("type = ?", tokenType),
 	)
@@ -103,7 +107,7 @@ func (s *SqlTokenStore) GetTokensByEmail(email, tokenType string) ([]*model.Toke
 func (s *SqlTokenStore) DeleteToken(tokenValue string) error {
 	_, err := s.execBuilder(
 		s.db,
-		sq.Delete("").From(s.tablePrefix+"tokens").Where("token = ?", tokenValue),
+		sq.Delete("").From(s.getTokenTable()).Where("token = ?", tokenValue),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete token")
@@ -135,7 +139,7 @@ func (s *SqlTokenStore) CleanupTokenStore(expiryTimeMillis int64) {
 	deltime := model.GetMillis() - expiryTimeMillis
 	_, err := s.execBuilder(
 		s.db,
-		sq.Delete("").From(s.tablePrefix+"tokens").Where("create_at < ?", deltime),
+		sq.Delete("").From(s.getTokenTable()).Where("create_at < ?", deltime),
 	)
 	if err != nil {
 		s.logger.WithError(err).Error("Unable to cleanup token store")

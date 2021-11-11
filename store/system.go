@@ -7,6 +7,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+func (s *SqlStore) getSystemTable() string {
+	return s.tablePrefix + "system"
+}
+
 // getSystemValue queries the System table for the given key
 func (s *SqlStore) getSystemValue(q queryer, key string) (string, error) {
 	var value string
@@ -14,7 +18,7 @@ func (s *SqlStore) getSystemValue(q queryer, key string) (string, error) {
 	err := s.getBuilder(
 		q,
 		&value,
-		sq.Select("value").From(s.tablePrefix+"systems").Where("key = ?", key),
+		sq.Select("value").From(s.getSystemTable()).Where("key = ?", key),
 	)
 	if err == sql.ErrNoRows {
 		return "", nil
@@ -29,7 +33,7 @@ func (s *SqlStore) getSystemValue(q queryer, key string) (string, error) {
 func (s *SqlStore) setSystemValue(e execer, key, value string) error {
 	result, err := s.execBuilder(
 		e,
-		sq.Update(s.tablePrefix+"systems").
+		sq.Update(s.getSystemTable()).
 			Where("key = ?", key).
 			Set("value", value),
 	)
@@ -42,9 +46,9 @@ func (s *SqlStore) setSystemValue(e execer, key, value string) error {
 		return nil
 	}
 
-	result, err = s.execBuilder(
+	_, err = s.execBuilder(
 		e,
-		sq.Insert(s.tablePrefix+"systems").
+		sq.Insert(s.getSystemTable()).
 			Columns("key", "value").
 			Values(key, value),
 	)

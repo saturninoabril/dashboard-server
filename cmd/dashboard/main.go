@@ -32,7 +32,6 @@ func init() {
 
 	tablePrefix, ok := os.LookupEnv("DASHBOARD_TABLE_PREFIX")
 	if !ok {
-		fmt.Printf("\nUsing default table prefix: '%s'", defaultTablePrefix)
 		tablePrefix = defaultTablePrefix
 	}
 

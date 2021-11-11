@@ -8,7 +8,7 @@ const (
 	// SessionCookieUser is the cookie key for the logged in user.
 	SessionCookieUser = "DASHBOARDUSERID"
 	// SessionHeader is the header key for a session.
-	SessionHeader = "token"
+	SessionHeader = "Token"
 	// SessionLengthMilliseconds is the session length in milliseconds.
 	SessionLengthMilliseconds = 1000 * 60 * 60 * 24 * 15 // 15 days
 	// HeaderRequestedWith is the HTTP header X-Requested-With.
